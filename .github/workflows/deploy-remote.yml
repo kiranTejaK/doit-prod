@@ -24,10 +24,11 @@ jobs:
 
       - name: Install dependencies
         run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          export PATH="$HOME/.local/bin:$PATH"
           cd backend
-          python -m pip install --upgrade pip
-          pip install ruff pytest httpx pydantic email-validator passlib tenacity sqlalchemy psycopg pydantic-settings
-          pip install -e .
+          uv pip install --system ruff pytest httpx pydantic email-validator passlib tenacity sqlalchemy psycopg pydantic-settings
+          uv pip install --system -e .
 
       - name: Run Ruff
         run: |
