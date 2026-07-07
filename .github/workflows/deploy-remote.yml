@@ -117,27 +117,36 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create .env file
+        run: |
+          cat << 'EOF' > .env.new
+          ${{ secrets.ENV_FILE_CONTENT }}
+          EOF
+          sed -i '/^DOCKER_IMAGE_BACKEND=/d' .env.new
+          sed -i '/^DOCKER_IMAGE_FRONTEND=/d' .env.new
+          sed -i '/^TAG=/d' .env.new
+          echo "DOCKER_IMAGE_BACKEND=${{ env.DOCKER_IMAGE_BACKEND }}" >> .env.new
+          echo "DOCKER_IMAGE_FRONTEND=${{ env.DOCKER_IMAGE_FRONTEND }}" >> .env.new
+          echo "TAG=${{ env.TAG }}" >> .env.new
+
       - name: Copy docker-compose files via SCP
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "docker-compose.prod.yml,docker-compose.traefik.yml"
+          source: "docker-compose.prod.yml,docker-compose.traefik.yml,.env.new"
           target: "~/doitapp-deploy"
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
-          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE_CONTENT }}
-          DOCKER_IMAGE_BACKEND: ${{ env.DOCKER_IMAGE_BACKEND }}
-          DOCKER_IMAGE_FRONTEND: ${{ env.DOCKER_IMAGE_FRONTEND }}
           TAG: ${{ env.TAG }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: ENV_FILE_CONTENT,DOCKER_IMAGE_BACKEND,DOCKER_IMAGE_FRONTEND,TAG
+          envs: TAG
           script_stop: true
           script: |
             mkdir -p ~/doitapp-deploy
@@ -151,18 +160,8 @@ jobs:
               OLD_TAG="latest"
             fi
             
-            # Create fresh .env file from secret
-            echo "$ENV_FILE_CONTENT" > .env
-            
-            # Append dynamic image names and tags to .env
-            # Using sed to remove them if they exist in secret to avoid duplicates
-            sed -i '/^DOCKER_IMAGE_BACKEND=/d' .env
-            sed -i '/^DOCKER_IMAGE_FRONTEND=/d' .env
-            sed -i '/^TAG=/d' .env
-            
-            echo "DOCKER_IMAGE_BACKEND=$DOCKER_IMAGE_BACKEND" >> .env
-            echo "DOCKER_IMAGE_FRONTEND=$DOCKER_IMAGE_FRONTEND" >> .env
-            echo "TAG=$TAG" >> .env
+            # Use the new .env file we transferred securely via SCP
+            mv .env.new .env
             
             # Check for traefik-public network
             if ! docker network ls | grep -q "traefik-public"; then
