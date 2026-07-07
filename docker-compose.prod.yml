@@ -1,7 +1,7 @@
 services:
 
   db:
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     restart: always
     command: postgres -c shared_buffers=64MB -c max_connections=50 -c work_mem=4MB
     deploy:
