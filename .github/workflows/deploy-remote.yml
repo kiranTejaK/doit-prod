@@ -35,6 +35,12 @@ jobs:
           ruff check .
 
       - name: Run Pytest
+        env:
+          PROJECT_NAME: "Test Project"
+          POSTGRES_SERVER: "localhost"
+          POSTGRES_USER: "postgres"
+          FIRST_SUPERUSER: "admin@doit.com"
+          FIRST_SUPERUSER_PASSWORD: "password1234"
         run: |
           cd backend
           pytest tests/unit
