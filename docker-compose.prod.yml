@@ -1,0 +1,167 @@
+services:
+
+  db:
+    image: postgres:17
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s
+    volumes:
+      - app-db-data:/var/lib/postgresql/data/pgdata
+    env_file:
+      - .env
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB}
+
+  adminer:
+    image: adminer
+    restart: always
+    networks:
+      - traefik-public
+      - default
+    depends_on:
+      - db
+    environment:
+      - ADMINER_DESIGN=pepa-linha-dark
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+
+      # HTTPS redirect
+      - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
+
+      # Adminer HTTP ? HTTPS
+      - traefik.http.routers.${STACK_NAME}-adminer-http.rule=Host(`adminer.${DOMAIN}`)
+      - traefik.http.routers.${STACK_NAME}-adminer-http.entrypoints=http
+      - traefik.http.routers.${STACK_NAME}-adminer-http.middlewares=https-redirect
+
+      # Adminer HTTPS
+      - traefik.http.routers.${STACK_NAME}-adminer-https.rule=Host(`adminer.${DOMAIN}`)
+      - traefik.http.routers.${STACK_NAME}-adminer-https.entrypoints=https
+      - traefik.http.routers.${STACK_NAME}-adminer-https.tls=true
+      - traefik.http.routers.${STACK_NAME}-adminer-https.tls.certresolver=le
+      - traefik.http.routers.${STACK_NAME}-adminer-https.middlewares=adminer-auth
+      - traefik.http.services.${STACK_NAME}-adminer.loadbalancer.server.port=8080
+
+      # Adminer Basic Auth
+      - traefik.http.middlewares.adminer-auth.basicauth.users=${USERNAME}:${HASHED_PASSWORD}
+
+  redis:
+    image: redis:alpine
+    restart: always
+    networks:
+      - traefik-public
+      - default
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  prestart:
+    image: '${DOCKER_IMAGE_BACKEND}-prestart:${TAG-latest}'
+    networks:
+      - traefik-public
+      - default
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+    command: bash scripts/prestart.sh
+    env_file:
+      - .env
+
+  backend:
+    image: '${DOCKER_IMAGE_BACKEND}:${TAG-latest}'
+    restart: always
+    networks:
+      - traefik-public
+      - default
+    volumes:
+      - ./backend:/app
+      - /app/.venv
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+      redis:
+        condition: service_healthy
+        restart: true
+      prestart:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+
+      # HTTPS redirect middleware (defined once here globally)
+      - traefik.http.middlewares.https-redirect.redirectscheme.scheme=https
+
+      # Backend service
+      - traefik.http.services.${STACK_NAME}-backend.loadbalancer.server.port=8000
+
+      # Backend HTTP
+      - traefik.http.routers.${STACK_NAME}-backend-http.rule=Host(`api.${DOMAIN}`)
+      - traefik.http.routers.${STACK_NAME}-backend-http.entrypoints=http
+      - traefik.http.routers.${STACK_NAME}-backend-http.middlewares=https-redirect
+
+      # Backend HTTPS
+      - traefik.http.routers.${STACK_NAME}-backend-https.rule=Host(`api.${DOMAIN}`)
+      - traefik.http.routers.${STACK_NAME}-backend-https.entrypoints=https
+      - traefik.http.routers.${STACK_NAME}-backend-https.tls=true
+      - traefik.http.routers.${STACK_NAME}-backend-https.tls.certresolver=le
+
+  frontend:
+    image: '${DOCKER_IMAGE_FRONTEND}:${TAG-latest}'
+    restart: always
+    networks:
+      - traefik-public
+      - default
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+
+      # Frontend service
+      - traefik.http.services.${STACK_NAME}-frontend.loadbalancer.server.port=80
+
+      # Frontend HTTP
+      - traefik.http.routers.${STACK_NAME}-frontend-http.rule=Host(`dashboard.${DOMAIN}`)
+      - traefik.http.routers.${STACK_NAME}-frontend-http.entrypoints=http
+      - traefik.http.routers.${STACK_NAME}-frontend-http.middlewares=https-redirect
+
+      # Frontend HTTPS
+      - traefik.http.routers.${STACK_NAME}-frontend-https.rule=Host(`dashboard.${DOMAIN}`)
+      - traefik.http.routers.${STACK_NAME}-frontend-https.entrypoints=https
+      - traefik.http.routers.${STACK_NAME}-frontend-https.tls=true
+      - traefik.http.routers.${STACK_NAME}-frontend-https.tls.certresolver=le
+
+      # Apex ? dashboard redirect
+      - traefik.http.routers.${STACK_NAME}-root.rule=Host(`${DOMAIN}`)
+      - traefik.http.routers.${STACK_NAME}-root.entrypoints=https
+      - traefik.http.routers.${STACK_NAME}-root.tls=true
+      - traefik.http.routers.${STACK_NAME}-root.tls.certresolver=le
+      - traefik.http.routers.${STACK_NAME}-root.middlewares=redirect-to-dashboard
+      - traefik.http.routers.${STACK_NAME}-root.service=noop@internal
+
+      - traefik.http.middlewares.redirect-to-dashboard.redirectregex.regex=^https?://(www\\.)?${DOMAIN}/(.*)
+      - traefik.http.middlewares.redirect-to-dashboard.redirectregex.replacement=https://dashboard.${DOMAIN}/$${2}
+      - traefik.http.middlewares.redirect-to-dashboard.redirectregex.permanent=true
+
+volumes:
+  app-db-data:
+
+networks:
+  traefik-public:
+    external: true

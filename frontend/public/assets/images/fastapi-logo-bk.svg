@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="150" viewBox="0 0 400 150" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    /* Light theme variables */
+    :root {
+      --logo-bg: url(#logoGradientLight);
+      --icon-bg: #ffffff;
+      --square-color: #fed7aa;
+      --active-square: #f97316;
+      --text-gradient: url(#textGradientLight);
+      --connection-color: #fb923c;
+      --shadow-color: rgba(251, 146, 60, 0.15);
+      --text-shadow-color: rgba(251, 146, 60, 0.2);
+    }
+    
+    /* Dark theme override */
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --logo-bg: url(#logoGradientDark);
+        --icon-bg: #334155;
+        --square-color: #475569;
+        --active-square: #f97316;
+        --text-gradient: url(#textGradientDark);
+        --connection-color: #fb923c;
+        --shadow-color: rgba(251, 146, 60, 0.1);
+        --text-shadow-color: rgba(251, 146, 60, 0.3);
+      }
+    }
+    
+    .logo-container {
+      fill: var(--logo-bg);
+      filter: drop-shadow(0 10px 25px var(--shadow-color));
+    }
+    
+    .workspace-icon-bg {
+      fill: var(--icon-bg);
+      filter: drop-shadow(0 2px 8px rgba(194, 65, 12, 0.1));
+    }
+    
+    .workspace-square {
+      fill: var(--square-color);
+    }
+    
+    .active-square {
+      fill: var(--active-square);
+      filter: drop-shadow(0 2px 8px rgba(249, 115, 22, 0.3));
+    }
+    
+    .connection-line {
+      stroke: var(--connection-color);
+      stroke-width: 2;
+      stroke-opacity: 0.3;
+    }
+    
+    .logo-text {
+      fill: var(--text-gradient);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-weight: 800;
+      font-size: 48px;
+      letter-spacing: -1px;
+      filter: drop-shadow(0 2px 10px var(--text-shadow-color));
+    }
+  </style>
+  
+  <!-- Gradients Definitions -->
+  <defs>
+    <!-- Light mode gradients -->
+    <linearGradient id="logoGradientLight" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffedd5"/>
+      <stop offset="100%" stop-color="#fed7aa"/>
+    </linearGradient>
+    
+    <linearGradient id="textGradientLight" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#c2410c"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+    
+    <!-- Dark mode gradients -->
+    <linearGradient id="logoGradientDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+    
+    <linearGradient id="textGradientDark" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fdba74"/>
+      <stop offset="100%" stop-color="#f97316"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Main Logo Container -->
+  <rect x="20" y="20" width="290" height="110" rx="24" class="logo-container"/>
+  
+  <!-- Workspace Icon -->
+  <g transform="translate(60, 45)">
+    <!-- Icon Background -->
+    <rect x="0" y="0" width="60" height="60" rx="12" class="workspace-icon-bg"/>
+    
+    <!-- Connection Lines Background -->
+    <rect x="6" y="6" width="48" height="48" rx="8" fill="none" stroke="#fb923c" stroke-width="1" stroke-opacity="0.3"/>
+    
+    <!-- Connection Lines -->
+    <line x1="30" y1="6" x2="30" y2="54" class="connection-line"/>
+    <line x1="6" y1="30" x2="54" y2="30" class="connection-line"/>
+    
+    <!-- Grid Squares -->
+    <rect x="10" y="10" width="15" height="15" rx="4" class="workspace-square"/>
+    <rect x="35" y="10" width="15" height="15" rx="4" class="active-square"/>
+    <rect x="10" y="35" width="15" height="15" rx="4" class="workspace-square"/>
+    <rect x="35" y="35" width="15" height="15" rx="4" class="workspace-square"/>
+  </g>
+  
+  <!-- DOit Text Only (no tagline) -->
+  <text x="140" y="93" class="logo-text">DOit</text>
+</svg>

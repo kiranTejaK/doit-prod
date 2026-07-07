@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="80" viewBox="0 0 200 80" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    :root {
+      --primary: #f97316;
+      --primary-dark: #c2410c;
+      --bg: #ffffff;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --primary: #fdba74;
+        --primary-dark: #f97316;
+        --bg: transparent;
+      }
+    }
+    
+    .workspace-grid {
+      fill: var(--primary);
+      opacity: 0.9;
+    }
+    
+    .active-square {
+      fill: #10b981; /* Green accent for active */
+      filter: drop-shadow(0 2px 4px rgba(16, 185, 129, 0.3));
+    }
+    
+    .connection-lines {
+      stroke: var(--primary);
+      stroke-width: 1.5;
+      stroke-opacity: 0.3;
+      fill: none;
+    }
+    
+    .logo-text {
+      fill: var(--primary-dark);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-weight: 800;
+      font-size: 38px;
+    }
+    
+    .logo-tagline {
+      fill: var(--primary);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      opacity: 0.8;
+    }
+  </style>
+  
+  <!-- Workspace Grid Icon -->
+  <g transform="translate(10, 10)">
+    <!-- Background -->
+    <rect x="0" y="0" width="60" height="60" rx="8" fill="var(--bg)" stroke="var(--primary)" stroke-width="2" stroke-opacity="0.1"/>
+    
+    <!-- Grid Squares -->
+    <rect x="10" y="10" width="15" height="15" rx="3" class="workspace-grid"/>
+    <rect x="35" y="10" width="15" height="15" rx="3" class="workspace-grid"/>
+    <rect x="10" y="35" width="15" height="15" rx="3" class="workspace-grid"/>
+    <rect x="35" y="35" width="15" height="15" rx="3" class="active-square"/>
+    
+    <!-- Connection Lines -->
+    <path d="M25 17.5H35M17.5 25V35M42.5 25V35" class="connection-lines"/>
+    
+    <!-- People Dots (Collaboration) -->
+    <circle cx="22" cy="22" r="2" fill="var(--primary)" opacity="0.7"/>
+    <circle cx="38" cy="22" r="2" fill="var(--primary)" opacity="0.7"/>
+    <circle cx="22" cy="48" r="2" fill="var(--primary)" opacity="0.7"/>
+  </g>
+  
+  <!-- DOit Text -->
+  <text x="85" y="48" class="logo-text">DOit</text>
+  
+  <!-- Tagline -->
+  <text x="90" y="65" class="logo-tagline">Assign - Track</text>
+</svg>

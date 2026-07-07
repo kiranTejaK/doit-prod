@@ -1,0 +1,200 @@
+name: Deploy to Remote Server
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  DOCKER_IMAGE_BACKEND: ${{ secrets.DOCKERHUB_USERNAME }}/doitapp-backend
+  DOCKER_IMAGE_FRONTEND: ${{ secrets.DOCKERHUB_USERNAME }}/doitapp-frontend
+  TAG: ${{ github.sha }}
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          python -m pip install --upgrade pip
+          pip install ruff pytest httpx pydantic email-validator passlib tenancy sqlalchemy psycopg pydantic-settings
+          pip install -e .
+
+      - name: Run Ruff
+        run: |
+          cd backend
+          ruff check .
+
+      - name: Run Pytest
+        run: |
+          cd backend
+          pytest tests/unit
+
+  test-and-lint-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Run Lint
+        run: |
+          cd frontend
+          npm run lint
+
+      - name: Run Build Check (TypeScript + Vite)
+        run: |
+          cd frontend
+          npm run build
+
+  build-and-push:
+    needs: [test-and-lint, test-and-lint-frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.DOCKER_IMAGE_BACKEND }}:${{ env.TAG }}
+            ${{ env.DOCKER_IMAGE_BACKEND }}:latest
+            ${{ env.DOCKER_IMAGE_BACKEND }}-prestart:${{ env.TAG }}
+            ${{ env.DOCKER_IMAGE_BACKEND }}-prestart:latest
+
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ env.DOCKER_IMAGE_FRONTEND }}:${{ env.TAG }}
+            ${{ env.DOCKER_IMAGE_FRONTEND }}:latest
+          build-args: |
+            NODE_ENV=production
+            VITE_API_URL=https://api.${{ secrets.DOMAIN_PRODUCTION }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy docker-compose files via SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          source: "docker-compose.prod.yml,docker-compose.traefik.yml"
+          target: "~/doitapp-deploy"
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script_stop: true
+          script: |
+            mkdir -p ~/doitapp-deploy
+            cd ~/doitapp-deploy
+            
+            # Backup old .env to capture previous TAG for rollback
+            if [ -f .env ]; then
+              cp .env .env.backup
+              OLD_TAG=$(grep "^TAG=" .env | cut -d '=' -f 2 || echo "latest")
+            else
+              OLD_TAG="latest"
+            fi
+            
+            # Create fresh .env file from secret
+            echo "${{ secrets.ENV_FILE_CONTENT }}" > .env
+            
+            # Append dynamic image names and tags to .env
+            # Using sed to remove them if they exist in secret to avoid duplicates
+            sed -i '/^DOCKER_IMAGE_BACKEND=/d' .env
+            sed -i '/^DOCKER_IMAGE_FRONTEND=/d' .env
+            sed -i '/^TAG=/d' .env
+            
+            echo "DOCKER_IMAGE_BACKEND=${{ env.DOCKER_IMAGE_BACKEND }}" >> .env
+            echo "DOCKER_IMAGE_FRONTEND=${{ env.DOCKER_IMAGE_FRONTEND }}" >> .env
+            echo "TAG=${{ env.TAG }}" >> .env
+            
+            # Check for traefik-public network
+            if ! docker network ls | grep -q "traefik-public"; then
+              echo "Creating traefik-public network..."
+              docker network create traefik-public
+            fi
+            
+            # Check for traefik container
+            if ! docker ps --format '{{.Names}}' | grep -q "^traefik$"; then
+              echo "Traefik container not running. Starting traefik..."
+              docker compose -f docker-compose.traefik.yml up -d
+            fi
+            
+            echo "Pulling new images..."
+            docker compose -f docker-compose.prod.yml pull
+            
+            echo "Deploying new version..."
+            docker compose -f docker-compose.prod.yml up -d
+            
+            echo "Waiting for containers to start..."
+            sleep 15
+            
+            echo "Running health checks..."
+            # Check if backend container is running
+            BACKEND_CONTAINER=$(docker compose ps -q backend)
+            FRONTEND_CONTAINER=$(docker compose ps -q frontend)
+            
+            ROLLBACK=false
+            if [ -z "$BACKEND_CONTAINER" ] || [ -z "$FRONTEND_CONTAINER" ]; then
+              echo "ERROR: Containers are not running!"
+              ROLLBACK=true
+            else
+              BACKEND_STATUS=$(docker inspect -f '{{.State.Status}}' $BACKEND_CONTAINER)
+              FRONTEND_STATUS=$(docker inspect -f '{{.State.Status}}' $FRONTEND_CONTAINER)
+              
+              if [ "$BACKEND_STATUS" != "running" ] || [ "$FRONTEND_STATUS" != "running" ]; then
+                echo "ERROR: Backend status is $BACKEND_STATUS, Frontend status is $FRONTEND_STATUS"
+                ROLLBACK=true
+              else
+                echo "Health check passed! Containers are running successfully."
+              fi
+            fi
+            
+            if [ "$ROLLBACK" = true ]; then
+              echo "Initiating rollback to previous TAG: $OLD_TAG"
+              sed -i "s/^TAG=.*/TAG=$OLD_TAG/" .env
+              docker compose -f docker-compose.prod.yml up -d
+              echo "Rollback completed. The deployment failed and was reverted."
+              exit 1
+            fi

@@ -1,0 +1,19 @@
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.egg-info
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov
+.venv
+
+# Testing and Local files
+tests/
+unit_test_output*.txt
+.env
+Dockerfile
+README.md

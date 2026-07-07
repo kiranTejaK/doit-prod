@@ -1,0 +1,9 @@
+node_modules
+dist
+.env
+.git
+tests/
+playwright.config.ts
+Dockerfile*
+README.md
+build_log.txt

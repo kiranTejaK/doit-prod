@@ -1,0 +1,75 @@
+/* App.css - Theme Overrides */
+
+:root {
+  /* Brand Colors */
+  --ui-main: #fb923c;
+  --bg-light: #f8f9fa;
+  --bg-dark: #111111;
+  --border-light: #e5e7eb;
+
+  /* Accent */
+  --accent-hover: #646cff;
+}
+
+/* Global Dark Theme Overrides */
+[data-bs-theme="dark"] {
+  --bs-body-bg: #242424;
+  --bs-body-color: rgba(255, 255, 255, 0.87);
+
+  /* Secondary Backgrounds (Sidebar, tertiary areas) */
+  --bs-tertiary-bg: #333333;
+  --bs-secondary-bg: #1a1a1a;
+
+  /* Borders */
+  --bs-border-color: #444444;
+  --bs-border-color-translucent: rgba(68, 68, 68, 0.5);
+
+  /* Inputs */
+  --bs-input-border-color: #555555;
+  --bs-input-bg: #333333;
+  --bs-input-color: rgba(255, 255, 255, 0.87);
+}
+
+/* Light Theme Overrides */
+[data-bs-theme="light"] {
+  --bs-body-bg: var(--bg-light);
+  --bs-border-color: var(--border-light);
+}
+
+/* Custom Component Overrides */
+
+/* Primary Button using Brand Orange */
+.btn-primary {
+  --bs-btn-bg: var(--ui-main);
+  --bs-btn-border-color: var(--ui-main);
+  --bs-btn-hover-bg: #f97316; /* Slightly darker orange for hover */
+  --bs-btn-hover-border-color: #f97316;
+  --bs-btn-active-bg: #ea580c;
+  --bs-btn-active-border-color: #ea580c;
+  --bs-btn-disabled-bg: var(--ui-main);
+  --bs-btn-disabled-border-color: var(--ui-main);
+  --bs-btn-color: #fff;
+}
+
+/* Accent Hover color for links and small interactive elements */
+.btn-link,
+a {
+  --bs-link-color: var(--ui-main);
+  --bs-link-hover-color: var(--accent-hover);
+}
+
+/* Navigation & Sidebar specific styling */
+.bg-body-tertiary {
+  background-color: var(--bs-tertiary-bg);
+}
+
+.sidebar-link.active {
+  background-color: var(--ui-main);
+  color: white;
+}
+
+/* Error messages */
+.text-danger,
+.alert-danger {
+  color: #ff4d4d; /* Slightly brighter red for dark theme readability */
+}
