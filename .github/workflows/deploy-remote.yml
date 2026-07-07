@@ -117,38 +117,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Create .env file
-        run: |
-          cat << 'EOF' > env.txt
-          ${{ secrets.ENV_FILE_CONTENT }}
-          EOF
-          sed -i '/^DOCKER_IMAGE_BACKEND=/d' env.txt
-          sed -i '/^DOCKER_IMAGE_FRONTEND=/d' env.txt
-          sed -i '/^TAG=/d' env.txt
-          echo "DOCKER_IMAGE_BACKEND=${{ env.DOCKER_IMAGE_BACKEND }}" >> env.txt
-          echo "DOCKER_IMAGE_FRONTEND=${{ env.DOCKER_IMAGE_FRONTEND }}" >> env.txt
-          echo "TAG=${{ env.TAG }}" >> env.txt
-
       - name: Copy docker-compose files via SCP
-        uses: appleboy/scp-action@v0.1.7
+        uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "docker-compose.prod.yml,docker-compose.traefik.yml,env.txt"
+          source: "docker-compose.prod.yml,docker-compose.traefik.yml"
           target: "~/doitapp-deploy"
 
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          TAG: ${{ env.TAG }}
+        uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: TAG
-          script_stop: true
           script: |
+            set -e
+            
             mkdir -p ~/doitapp-deploy
             cd ~/doitapp-deploy
             
@@ -160,8 +146,17 @@ jobs:
               OLD_TAG="latest"
             fi
             
-            # Use the new .env file we transferred securely via SCP
-            mv env.txt .env
+            # Create .env directly
+            cat << 'EOF' > .env
+            ${{ secrets.ENV_FILE_CONTENT }}
+            EOF
+            
+            sed -i '/^DOCKER_IMAGE_BACKEND=/d' .env
+            sed -i '/^DOCKER_IMAGE_FRONTEND=/d' .env
+            sed -i '/^TAG=/d' .env
+            echo "DOCKER_IMAGE_BACKEND=${{ env.DOCKER_IMAGE_BACKEND }}" >> .env
+            echo "DOCKER_IMAGE_FRONTEND=${{ env.DOCKER_IMAGE_FRONTEND }}" >> .env
+            echo "TAG=${{ env.TAG }}" >> .env
             
             # Check for traefik-public network
             if ! docker network ls | grep -q "traefik-public"; then
