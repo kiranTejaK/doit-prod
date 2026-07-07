@@ -7,6 +7,15 @@ services:
       # Listen on port 443, default for HTTPS
       - 443:443
     restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 150M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     labels:
       # Enable Traefik for this service, to make it available in the public network
       - traefik.enable=true
@@ -58,7 +67,7 @@ services:
       # Enable the access log, with HTTP requests
       - --accesslog
       # Enable the Traefik log, for configurations and errors
-      - --log
+      - --log.level=DEBUG
       # Enable the Dashboard and API
       - --api
     networks:
