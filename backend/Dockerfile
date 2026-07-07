@@ -43,4 +43,4 @@ USER appuser
 # Copy virtual environment and app code from build stage
 COPY --from=build-stage --chown=appuser:appuser /app /app
 
-CMD ["fastapi", "run", "--workers", "4", "app/main.py"]
+CMD ["fastapi", "run", "app/main.py"]
