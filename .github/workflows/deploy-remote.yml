@@ -26,7 +26,7 @@ jobs:
         run: |
           cd backend
           python -m pip install --upgrade pip
-          pip install ruff pytest httpx pydantic email-validator passlib tenancy sqlalchemy psycopg pydantic-settings
+          pip install ruff pytest httpx pydantic email-validator passlib tenacity sqlalchemy psycopg pydantic-settings
           pip install -e .
 
       - name: Run Ruff
