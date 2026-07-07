@@ -165,7 +165,7 @@ jobs:
             fi
             
             # Check for traefik container
-            if ! docker ps --format '{{.Names}}' | grep -q "^traefik$"; then
+            if ! docker ps --format '{{.Names}}' | grep -q "traefik"; then
               echo "Traefik container not running. Starting traefik..."
               docker compose -f docker-compose.traefik.yml up -d
             fi
