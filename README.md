@@ -2,7 +2,7 @@
 
 ## Overview
 
-DOit is a modern, full-stack Task Management Platform designed to help teams and individuals organize projects, tasks, and workspaces. Built with performance and scalability in mind, the platform provides a responsive dashboard, robust REST API, and secure authentication.
+DOit is a modern, fully dockerized Task Management Platform designed to help teams and individuals organize projects, tasks, and workspaces. Built with performance and scalability in mind, the platform provides a responsive dashboard, robust REST API, and secure authentication.
 
 ![DOit Architecture Diagram](./docs/architecture.png)
 ![DOit ERD Diagram](./docs/erd.png)
