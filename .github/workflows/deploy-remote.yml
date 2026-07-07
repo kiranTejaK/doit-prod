@@ -119,15 +119,15 @@ jobs:
 
       - name: Create .env file
         run: |
-          cat << 'EOF' > .env.new
+          cat << 'EOF' > env.txt
           ${{ secrets.ENV_FILE_CONTENT }}
           EOF
-          sed -i '/^DOCKER_IMAGE_BACKEND=/d' .env.new
-          sed -i '/^DOCKER_IMAGE_FRONTEND=/d' .env.new
-          sed -i '/^TAG=/d' .env.new
-          echo "DOCKER_IMAGE_BACKEND=${{ env.DOCKER_IMAGE_BACKEND }}" >> .env.new
-          echo "DOCKER_IMAGE_FRONTEND=${{ env.DOCKER_IMAGE_FRONTEND }}" >> .env.new
-          echo "TAG=${{ env.TAG }}" >> .env.new
+          sed -i '/^DOCKER_IMAGE_BACKEND=/d' env.txt
+          sed -i '/^DOCKER_IMAGE_FRONTEND=/d' env.txt
+          sed -i '/^TAG=/d' env.txt
+          echo "DOCKER_IMAGE_BACKEND=${{ env.DOCKER_IMAGE_BACKEND }}" >> env.txt
+          echo "DOCKER_IMAGE_FRONTEND=${{ env.DOCKER_IMAGE_FRONTEND }}" >> env.txt
+          echo "TAG=${{ env.TAG }}" >> env.txt
 
       - name: Copy docker-compose files via SCP
         uses: appleboy/scp-action@v0.1.7
@@ -135,7 +135,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "docker-compose.prod.yml,docker-compose.traefik.yml,.env.new"
+          source: "docker-compose.prod.yml,docker-compose.traefik.yml,env.txt"
           target: "~/doitapp-deploy"
 
       - name: Deploy via SSH
@@ -161,7 +161,7 @@ jobs:
             fi
             
             # Use the new .env file we transferred securely via SCP
-            mv .env.new .env
+            mv env.txt .env
             
             # Check for traefik-public network
             if ! docker network ls | grep -q "traefik-public"; then
