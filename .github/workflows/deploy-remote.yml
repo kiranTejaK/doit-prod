@@ -128,10 +128,16 @@ jobs:
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          ENV_FILE_CONTENT: ${{ secrets.ENV_FILE_CONTENT }}
+          DOCKER_IMAGE_BACKEND: ${{ env.DOCKER_IMAGE_BACKEND }}
+          DOCKER_IMAGE_FRONTEND: ${{ env.DOCKER_IMAGE_FRONTEND }}
+          TAG: ${{ env.TAG }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: ENV_FILE_CONTENT,DOCKER_IMAGE_BACKEND,DOCKER_IMAGE_FRONTEND,TAG
           script_stop: true
           script: |
             mkdir -p ~/doitapp-deploy
@@ -146,7 +152,7 @@ jobs:
             fi
             
             # Create fresh .env file from secret
-            echo "${{ secrets.ENV_FILE_CONTENT }}" > .env
+            echo "$ENV_FILE_CONTENT" > .env
             
             # Append dynamic image names and tags to .env
             # Using sed to remove them if they exist in secret to avoid duplicates
@@ -154,9 +160,9 @@ jobs:
             sed -i '/^DOCKER_IMAGE_FRONTEND=/d' .env
             sed -i '/^TAG=/d' .env
             
-            echo "DOCKER_IMAGE_BACKEND=${{ env.DOCKER_IMAGE_BACKEND }}" >> .env
-            echo "DOCKER_IMAGE_FRONTEND=${{ env.DOCKER_IMAGE_FRONTEND }}" >> .env
-            echo "TAG=${{ env.TAG }}" >> .env
+            echo "DOCKER_IMAGE_BACKEND=$DOCKER_IMAGE_BACKEND" >> .env
+            echo "DOCKER_IMAGE_FRONTEND=$DOCKER_IMAGE_FRONTEND" >> .env
+            echo "TAG=$TAG" >> .env
             
             # Check for traefik-public network
             if ! docker network ls | grep -q "traefik-public"; then
