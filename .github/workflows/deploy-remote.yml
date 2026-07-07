@@ -181,8 +181,8 @@ jobs:
             
             echo "Running health checks..."
             # Check if backend container is running
-            BACKEND_CONTAINER=$(docker compose ps -q backend)
-            FRONTEND_CONTAINER=$(docker compose ps -q frontend)
+            BACKEND_CONTAINER=$(docker compose -f docker-compose.prod.yml ps -q backend)
+            FRONTEND_CONTAINER=$(docker compose -f docker-compose.prod.yml ps -q frontend)
             
             ROLLBACK=false
             if [ -z "$BACKEND_CONTAINER" ] || [ -z "$FRONTEND_CONTAINER" ]; then
