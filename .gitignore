@@ -41,5 +41,4 @@ htmlcov/
 *.swp
 
 # Custom App specific
-backend/app/email-templates/build/
 emails.db

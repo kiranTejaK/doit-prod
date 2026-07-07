@@ -41,6 +41,8 @@ jobs:
           POSTGRES_USER: "postgres"
           FIRST_SUPERUSER: "admin@doit.com"
           FIRST_SUPERUSER_PASSWORD: "password1234"
+          SMTP_HOST: "smtp.example.com"
+          EMAILS_FROM_EMAIL: "admin@doit.com"
         run: |
           cd backend
           pytest tests/unit
