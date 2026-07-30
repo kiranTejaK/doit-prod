@@ -82,9 +82,7 @@ export default function Layout() {
           collapsed && !isMobile && "justify-center px-3",
         )}
       >
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm shrink-0">
-          D
-        </div>
+        <img src="/favicon.svg" alt="DOit Logo" className="w-8 h-8 shrink-0" />
         {(!collapsed || isMobile) && (
           <div>
             <p className="text-sm font-bold tracking-tight text-sidebar-foreground">
