@@ -1,63 +1,83 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useSearchParams } from "react-router-dom"
-import api from "@/api"
-import useCustomToast from "@/hooks/useCustomToast"
+import {
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Package,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  useCreateItem,
+  useDeleteItem,
+  useItems,
+  useUpdateItem,
+} from "@/hooks/useItems"
+import { useToast } from "@/hooks/use-toast"
 
 const PER_PAGE = 5
 
 export default function ItemsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const page = parseInt(searchParams.get("page") || "1", 10)
-  const [items, setItems] = useState<any[]>([])
-  const [count, setCount] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const skip = (page - 1) * PER_PAGE
+
+  const { data, isLoading } = useItems({ skip, limit: PER_PAGE })
+  const createItem = useCreateItem()
+  const updateItem = useUpdateItem()
+  const deleteItem = useDeleteItem()
+  const { toast } = useToast()
 
   // Add Modal
   const [showAddModal, setShowAddModal] = useState(false)
   const [addTitle, setAddTitle] = useState("")
   const [addDesc, setAddDesc] = useState("")
-  const [addSubmitting, setAddSubmitting] = useState(false)
 
   // Edit Modal
   const [editItem, setEditItem] = useState<any>(null)
   const [editTitle, setEditTitle] = useState("")
   const [editDesc, setEditDesc] = useState("")
-  const [editSubmitting, setEditSubmitting] = useState(false)
 
-  const fetchItems = () => {
-    setLoading(true)
-    api
-      .get(`/api/v1/items/?skip=${(page - 1) * PER_PAGE}&limit=${PER_PAGE}`)
-      .then((res) => {
-        setItems(res.data.data || [])
-        setCount(res.data.count || 0)
-      })
-      .catch(() => showErrorToast("Failed to load items"))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => {
-    fetchItems()
-  }, [fetchItems])
+  const items = data?.items || []
+  const count = data?.count || 0
+  const totalPages = Math.ceil(count / PER_PAGE)
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
-    setAddSubmitting(true)
     try {
-      await api.post("/api/v1/items/", {
+      await createItem.mutateAsync({
         title: addTitle,
         description: addDesc,
       })
-      showSuccessToast("Item created successfully.")
+      toast({
+        title: "Item added",
+        description: `Item "${addTitle}" created.`,
+        variant: "success",
+      })
       setShowAddModal(false)
       setAddTitle("")
       setAddDesc("")
-      fetchItems()
-    } catch (err: any) {
-      showErrorToast(err.response?.data?.detail || "Failed")
-    } finally {
-      setAddSubmitting(false)
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to create item.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -70,262 +90,259 @@ export default function ItemsPage() {
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editItem) return
-    setEditSubmitting(true)
     try {
-      await api.patch(`/api/v1/items/${editItem.id}`, {
-        title: editTitle,
-        description: editDesc,
+      await updateItem.mutateAsync({
+        id: editItem.id,
+        data: {
+          title: editTitle,
+          description: editDesc,
+        },
       })
-      showSuccessToast("Item updated.")
+      toast({
+        title: "Item updated",
+        description: "Item details saved.",
+        variant: "success",
+      })
       setEditItem(null)
-      fetchItems()
-    } catch (err: any) {
-      showErrorToast(err.response?.data?.detail || "Failed")
-    } finally {
-      setEditSubmitting(false)
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to update item.",
+        variant: "destructive",
+      })
     }
   }
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this item?")) return
     try {
-      await api.delete(`/api/v1/items/${id}`)
-      showSuccessToast("Item deleted.")
-      fetchItems()
+      await deleteItem.mutateAsync(id)
+      toast({
+        title: "Item deleted",
+        description: "Item deleted successfully.",
+        variant: "success",
+      })
     } catch {
-      showErrorToast("Failed to delete item")
+      toast({
+        title: "Error",
+        description: "Failed to delete item.",
+        variant: "destructive",
+      })
     }
   }
 
-  const totalPages = Math.ceil(count / PER_PAGE)
-
   return (
-    <div>
-      <h2 className="pt-3 pb-3">Items Management</h2>
-      <button
-        className="btn btn-primary mb-3"
-        onClick={() => setShowAddModal(true)}
-      >
-        <i className="bi bi-plus" /> Add Item
-      </button>
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <Package className="text-primary" size={24} /> Items Management
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Manage custom data records and project items.
+          </p>
+        </div>
+        <Button onClick={() => setShowAddModal(true)} className="gap-2">
+          <Plus size={16} /> Add Item
+        </Button>
+      </div>
 
-      {loading ? (
-        <div className="text-center p-4">
-          <div className="spinner-border" role="status" />
+      {isLoading ? (
+        <div className="space-y-2">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
         </div>
       ) : items.length === 0 ? (
-        <div className="text-center p-5 text-secondary">
-          <i className="bi bi-search fs-1 d-block mb-2" />
-          <h5>You don't have any items yet</h5>
-          <p>Add a new item to get started</p>
-        </div>
+        <Card className="border-dashed py-12 text-center">
+          <CardContent className="space-y-3">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+              <Package size={24} />
+            </div>
+            <h3 className="text-lg font-medium text-foreground">No items found</h3>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+              Create an item to keep track of your custom resources.
+            </p>
+            <Button onClick={() => setShowAddModal(true)} className="gap-2 mt-2">
+              <Plus size={16} /> Add Item
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <>
-          <div className="table-responsive">
-            <table className="table table-hover">
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Title</th>
-                  <th>Description</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((item: any) => (
-                  <tr key={item.id}>
-                    <td className="text-truncate" style={{ maxWidth: "150px" }}>
-                      {item.id}
-                    </td>
-                    <td className="text-truncate" style={{ maxWidth: "200px" }}>
-                      {item.title}
-                    </td>
-                    <td
-                      className={item.description ? "" : "text-secondary"}
-                      style={{ maxWidth: "200px" }}
-                    >
-                      {item.description || "N/A"}
-                    </td>
-                    <td>
-                      <div className="btn-group btn-group-sm">
-                        <button
-                          className="btn btn-outline-primary"
-                          onClick={() => openEdit(item)}
-                        >
-                          <i className="bi bi-pencil" />
-                        </button>
-                        <button
-                          className="btn btn-outline-danger"
-                          onClick={() => handleDelete(item.id)}
-                        >
-                          <i className="bi bi-trash" />
-                        </button>
-                      </div>
-                    </td>
+          <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-muted/50 text-xs font-semibold text-muted-foreground uppercase border-b border-border">
+                  <tr>
+                    <th className="px-4 py-3.5">ID</th>
+                    <th className="px-4 py-3.5">Title</th>
+                    <th className="px-4 py-3.5">Description</th>
+                    <th className="px-4 py-3.5 text-right">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {items.map((item) => (
+                    <tr key={item.id} className="hover:bg-accent/40 transition-colors">
+                      <td className="px-4 py-3.5 font-mono text-xs text-muted-foreground">
+                        {item.id.slice(0, 8)}...
+                      </td>
+                      <td className="px-4 py-3.5 font-semibold text-foreground">
+                        {item.title}
+                      </td>
+                      <td className="px-4 py-3.5 text-muted-foreground">
+                        {item.description || "No description"}
+                      </td>
+                      <td className="px-4 py-3.5 text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            onClick={() => openEdit(item)}
+                          >
+                            <Pencil size={15} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => handleDelete(item.id)}
+                          >
+                            <Trash2 size={15} />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
+
+          {/* Pagination */}
           {totalPages > 1 && (
-            <nav className="d-flex justify-content-end">
-              <ul className="pagination pagination-sm">
-                <li className={`page-item ${page <= 1 ? "disabled" : ""}`}>
-                  <button
-                    className="page-link"
-                    onClick={() => setSearchParams({ page: String(page - 1) })}
-                  >
-                    Prev
-                  </button>
-                </li>
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <li
-                    key={i + 1}
-                    className={`page-item ${page === i + 1 ? "active" : ""}`}
-                  >
-                    <button
-                      className="page-link"
-                      onClick={() => setSearchParams({ page: String(i + 1) })}
-                    >
-                      {i + 1}
-                    </button>
-                  </li>
-                ))}
-                <li
-                  className={`page-item ${page >= totalPages ? "disabled" : ""}`}
+            <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
+              <span>
+                Showing {skip + 1}–{Math.min(skip + PER_PAGE, count)} of {count}
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  disabled={page <= 1}
+                  onClick={() => setSearchParams({ page: String(page - 1) })}
                 >
-                  <button
-                    className="page-link"
-                    onClick={() => setSearchParams({ page: String(page + 1) })}
-                  >
-                    Next
-                  </button>
-                </li>
-              </ul>
-            </nav>
+                  <ChevronLeft size={14} />
+                </Button>
+                <span className="px-2 font-medium text-foreground">
+                  {page} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setSearchParams({ page: String(page + 1) })}
+                >
+                  <ChevronRight size={14} />
+                </Button>
+              </div>
+            </div>
           )}
         </>
       )}
 
-      {/* Add Modal */}
-      {showAddModal && (
-        <div
-          className="modal show d-block"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <form onSubmit={handleAdd}>
-                <div className="modal-header">
-                  <h5 className="modal-title">Add Item</h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={() => setShowAddModal(false)}
-                  />
-                </div>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label className="form-label">Title *</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      required
-                      value={addTitle}
-                      onChange={(e) => setAddTitle(e.target.value)}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Description</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={addDesc}
-                      onChange={(e) => setAddDesc(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setShowAddModal(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={addSubmitting}
-                  >
-                    {addSubmitting ? "Saving..." : "Save"}
-                  </button>
-                </div>
-              </form>
+      {/* Add Item Modal */}
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent>
+          <form onSubmit={handleAdd}>
+            <DialogHeader>
+              <DialogTitle>Add Item</DialogTitle>
+              <DialogDescription>Create a new item entry.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="item-title">Title *</Label>
+                <Input
+                  id="item-title"
+                  required
+                  placeholder="Item title"
+                  value={addTitle}
+                  onChange={(e) => setAddTitle(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="item-desc">Description</Label>
+                <Input
+                  id="item-desc"
+                  placeholder="Optional description"
+                  value={addDesc}
+                  onChange={(e) => setAddDesc(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowAddModal(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createItem.isPending}>
+                {createItem.isPending ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Saving...
+                  </>
+                ) : (
+                  "Create Item"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
-      {/* Edit Modal */}
-      {editItem && (
-        <div
-          className="modal show d-block"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <form onSubmit={handleEdit}>
-                <div className="modal-header">
-                  <h5 className="modal-title">Edit Item</h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={() => setEditItem(null)}
-                  />
-                </div>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label className="form-label">Title *</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      required
-                      value={editTitle}
-                      onChange={(e) => setEditTitle(e.target.value)}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Description</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={editDesc}
-                      onChange={(e) => setEditDesc(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setEditItem(null)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={editSubmitting}
-                  >
-                    {editSubmitting ? "Saving..." : "Save"}
-                  </button>
-                </div>
-              </form>
+      {/* Edit Item Modal */}
+      <Dialog open={Boolean(editItem)} onOpenChange={(open) => !open && setEditItem(null)}>
+        <DialogContent>
+          <form onSubmit={handleEdit}>
+            <DialogHeader>
+              <DialogTitle>Edit Item</DialogTitle>
+              <DialogDescription>Update details for this item.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-title">Title *</Label>
+                <Input
+                  id="edit-title"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-desc">Description</Label>
+                <Input
+                  id="edit-desc"
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setEditItem(null)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateItem.isPending}>
+                {updateItem.isPending ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Saving...
+                  </>
+                ) : (
+                  "Save Changes"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

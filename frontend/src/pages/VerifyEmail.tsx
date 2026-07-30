@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
+import { CheckCircle2, AlertCircle, Loader2, ArrowLeft } from "lucide-react"
 import api from "@/api"
+import { Button } from "@/components/ui/button"
 
 export default function VerifyEmail() {
   const [status, setStatus] = useState<"pending" | "success" | "error">(
@@ -17,7 +19,7 @@ export default function VerifyEmail() {
       return
     }
     api
-      .post("/api/v1/verify-email", { token })
+      .post("/api/v1/login/verify-email", { token })
       .then(() => setStatus("success"))
       .catch((err) => {
         setStatus("error")
@@ -26,51 +28,58 @@ export default function VerifyEmail() {
   }, [token])
 
   return (
-    <div className="d-flex align-items-center justify-content-center vh-100 bg-body-tertiary">
-      <div
-        className="text-center p-4 rounded bg-body shadow"
-        style={{ maxWidth: "450px", width: "100%" }}
-      >
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-sm text-center">
         {status === "pending" && (
-          <>
-            <div className="spinner-border text-primary mb-3" role="status" />
-            <h4>Verifying your email...</h4>
-            <p className="text-secondary">Please wait.</p>
-          </>
-        )}
-        {status === "success" && (
-          <>
-            <i
-              className="bi bi-check-circle text-success"
-              style={{ fontSize: "4rem" }}
-            />
-            <h4 className="text-success mt-3">Email Verified!</h4>
-            <p>
-              Your email has been successfully verified. You can now log in.
+          <div className="py-6 space-y-4">
+            <Loader2 className="mx-auto h-12 w-12 text-primary animate-spin" />
+            <h2 className="text-xl font-bold tracking-tight text-foreground">
+              Verifying your email...
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Please wait while we confirm your account.
             </p>
-            <button
-              className="btn btn-primary mt-2"
-              onClick={() => navigate("/login")}
-            >
-              Continue to Login
-            </button>
-          </>
+          </div>
         )}
-        {status === "error" && (
-          <>
-            <i
-              className="bi bi-exclamation-circle text-danger"
-              style={{ fontSize: "4rem" }}
-            />
-            <h4 className="text-danger mt-3">Verification Failed</h4>
-            <p>{errorMsg}</p>
-            <button
-              className="btn btn-outline-primary mt-2"
+
+        {status === "success" && (
+          <div className="py-6 space-y-4">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success/15 text-success">
+              <CheckCircle2 size={36} />
+            </div>
+            <h2 className="text-xl font-bold tracking-tight text-foreground">
+              Email Verified!
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Your email has been successfully verified. You can now access your DOit account.
+            </p>
+            <Button
+              className="w-full mt-2"
               onClick={() => navigate("/login")}
             >
-              Back to Login
-            </button>
-          </>
+              Continue to Sign In
+            </Button>
+          </div>
+        )}
+
+        {status === "error" && (
+          <div className="py-6 space-y-4">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-destructive/15 text-destructive">
+              <AlertCircle size={36} />
+            </div>
+            <h2 className="text-xl font-bold tracking-tight text-foreground">
+              Verification Failed
+            </h2>
+            <p className="text-sm text-muted-foreground">{errorMsg}</p>
+            <Button
+              variant="outline"
+              className="w-full mt-2"
+              onClick={() => navigate("/login")}
+            >
+              <ArrowLeft size={16} />
+              Back to Sign In
+            </Button>
+          </div>
         )}
       </div>
     </div>

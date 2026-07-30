@@ -244,3 +244,48 @@ def generate_workspace_invitation_email(
         },
     )
     return EmailData(html_content=html_content, subject=subject)
+
+
+def run_with_retries(
+    func: Any,
+    *args: Any,
+    max_retries: int = 3,
+    base_delay: float = 2.0,
+    **kwargs: Any
+) -> Any:
+    """
+    Executes a function with retries and exponential backoff.
+    Designed for use inside FastAPI BackgroundTasks.
+    """
+    import time
+    import structlog
+    struct_logger = structlog.get_logger(__name__)
+
+    attempt = 0
+    while attempt < max_retries:
+        try:
+            return func(*args, **kwargs)
+        except Exception as exc:
+            attempt += 1
+            if attempt >= max_retries:
+                struct_logger.error(
+                    "background_task_failed_max_retries",
+                    func_name=getattr(func, "__name__", str(func)),
+                    attempt=attempt,
+                    max_retries=max_retries,
+                    error=str(exc),
+                    exc_info=True,
+                )
+                raise exc
+
+            delay = base_delay * (2 ** (attempt - 1))
+            struct_logger.warning(
+                "background_task_failed_retrying",
+                func_name=getattr(func, "__name__", str(func)),
+                attempt=attempt,
+                max_retries=max_retries,
+                delay=delay,
+                error=str(exc),
+            )
+            time.sleep(delay)
+

@@ -58,6 +58,17 @@ class Settings(BaseSettings):
 
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
+    APP_PREFIX: str = "doit"
+    CACHE_VERSION: str = "v1"
+
+    # ── Logging ──────────────────────────────────────────────────────────
+    LOG_DIR: str = "logs"
+    LOG_LEVEL: str = "INFO"
+    LOG_JSON: bool = True
+    LOG_MAX_BYTES: int = 5_000_000
+    LOG_BACKUP_COUNT: int = 5
+    ENABLE_FILE_LOGGING: bool = True
+    ENABLE_CONSOLE_LOGGING: bool = True
 
     S3_BUCKET: str | None = None
     AWS_ACCESS_KEY_ID: str | None = None

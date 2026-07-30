@@ -11,6 +11,7 @@ from app.schemas import (
     WorkspaceCreate,
     WorkspaceMemberPublic,
     WorkspaceMembersPublic,
+    WorkspaceMemberUpdate,
     WorkspacePublic,
     WorkspacesPublic,
     WorkspaceUpdate,
@@ -71,9 +72,10 @@ def read_workspace(session: SessionDep, current_user: CurrentUser, id: uuid.UUID
         # Check membership
         member = session.get(WorkspaceMember, (id, current_user.id))
         if not member:
-             raise HTTPException(status_code=400, detail="Not enough permissions")
+             raise HTTPException(status_code=403, detail="Not enough permissions")
 
     return workspace
+
 
 
 @router.post("/", response_model=WorkspacePublic)
@@ -180,7 +182,8 @@ def read_workspace_members(
         .offset(skip)
         .limit(limit)
     )
-    results = session.execute(statement).scalars().all()
+    results = session.execute(statement).all()
+
 
     # Transform to WorkspaceMemberPublic
     members_data = []
@@ -191,3 +194,74 @@ def read_workspace_members(
         members_data.append(WorkspaceMemberPublic(**member_dict))
 
     return WorkspaceMembersPublic(data=members_data, count=count)
+
+
+@router.put("/{id}/members/{user_id}", response_model=Message)
+def update_workspace_member_role(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    id: uuid.UUID,
+    user_id: uuid.UUID,
+    member_in: WorkspaceMemberUpdate,
+) -> Any:
+    """
+    Update a workspace member's role (Owner or Superuser only).
+    """
+    workspace = session.get(Workspace, id)
+    if not workspace:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+
+    if not current_user.is_superuser and workspace.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403, detail="Only the Workspace Owner can manage member roles"
+        )
+
+    if user_id == workspace.owner_id:
+        raise HTTPException(
+            status_code=400, detail="Cannot change role of workspace owner"
+        )
+
+    member = session.get(WorkspaceMember, (id, user_id))
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found in workspace")
+
+    member.role = member_in.role
+    session.add(member)
+    session.commit()
+    return Message(message="Workspace member role updated successfully")
+
+
+@router.delete("/{id}/members/{user_id}", response_model=Message)
+def remove_workspace_member(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    id: uuid.UUID,
+    user_id: uuid.UUID,
+) -> Any:
+    """
+    Remove a member from workspace (Owner or Superuser only).
+    """
+    workspace = session.get(Workspace, id)
+    if not workspace:
+        raise HTTPException(status_code=404, detail="Workspace not found")
+
+    if not current_user.is_superuser and workspace.owner_id != current_user.id:
+        raise HTTPException(
+            status_code=403, detail="Only the Workspace Owner can remove members"
+        )
+
+    if user_id == workspace.owner_id:
+        raise HTTPException(
+            status_code=400, detail="Workspace owner cannot be removed"
+        )
+
+    member = session.get(WorkspaceMember, (id, user_id))
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found in workspace")
+
+    session.delete(member)
+    session.commit()
+    return Message(message="Workspace member removed successfully")
+

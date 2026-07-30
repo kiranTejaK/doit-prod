@@ -51,6 +51,9 @@ class UsersPublic(BaseSchema):
 class WorkspaceMemberPublic(UserPublic):
     role: str
 
+class WorkspaceMemberUpdate(BaseSchema):
+    role: str = Field(pattern="^(admin|member)$")
+
 class WorkspaceMembersPublic(BaseSchema):
     data: list[WorkspaceMemberPublic]
     count: int
@@ -151,7 +154,8 @@ class TaskBase(BaseSchema):
 class TaskCreate(TaskBase):
     project_id: uuid.UUID
     section_id: uuid.UUID | None = None
-    assignee_id: uuid.UUID | None = None
+    assignee_id: uuid.UUID
+
 
 class TaskUpdate(TaskBase):
     title: str | None = Field(default=None, max_length=255)

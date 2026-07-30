@@ -1,12 +1,17 @@
 import { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { Eye, EyeOff, Loader2, LogIn } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import useAuth from "@/hooks/useAuth"
-import Logo from "/assets/images/fastapi-logo.svg"
 
 export default function Login() {
   const { login, error, resetError } = useAuth()
+  const navigate = useNavigate()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPwd, setShowPwd] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -16,69 +21,123 @@ export default function Login() {
     setSubmitting(true)
     try {
       await login(email, password)
+      navigate("/")
     } catch {
-      // error is displayed from useAuth
+      // error surfaced from useAuth
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <div className="d-flex align-items-center justify-content-center vh-100 bg-body-tertiary">
-      <form
-        onSubmit={handleSubmit}
-        className="p-4 rounded bg-body shadow"
-        style={{ maxWidth: "400px", width: "100%" }}
-      >
-        <div className="text-center mb-4">
-          <img src={Logo} alt="Logo" style={{ maxWidth: "180px" }} />
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="w-full max-w-sm">
+
+        {/* Brand */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary text-primary-foreground font-bold text-lg mb-4">
+            D
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Welcome back
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Sign in to your DOit account
+          </p>
         </div>
 
-        {error && <div className="alert alert-danger py-2 small">{error}</div>}
+        {/* Card */}
+        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+          <form onSubmit={handleSubmit} className="space-y-4">
 
-        <div className="mb-3">
-          <label className="form-label">Email</label>
-          <input
-            type="email"
-            className="form-control"
-            placeholder="Email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
+            {/* Error Alert */}
+            {error && (
+              <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
+                {error}
+              </div>
+            )}
+
+            {/* Email */}
+            <div className="space-y-1.5">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => {
+                  resetError()
+                  setEmail(e.target.value)
+                }}
+              />
+            </div>
+
+            {/* Password */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Link
+                  to="/recover-password"
+                  className="text-xs text-primary hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPwd ? "text" : "password"}
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  required
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setShowPwd((v) => !v)}
+                >
+                  {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Submit */}
+            <Button
+              id="login-submit"
+              type="submit"
+              className="w-full"
+              disabled={submitting}
+            >
+              {submitting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                <>
+                  <LogIn size={16} />
+                  Sign In
+                </>
+              )}
+            </Button>
+          </form>
         </div>
 
-        <div className="mb-3">
-          <label className="form-label">Password</label>
-          <input
-            type="password"
-            className="form-control"
-            placeholder="Password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-
-        <div className="mb-3">
-          <Link to="/recover-password" className="text-decoration-none small">
-            Forgot Password?
+        {/* Footer link */}
+        <p className="text-center text-sm text-muted-foreground mt-6">
+          Don&apos;t have an account?{" "}
+          <Link to="/signup" className="text-primary font-medium hover:underline">
+            Create one
           </Link>
-        </div>
-
-        <button
-          type="submit"
-          className="btn btn-primary w-100"
-          disabled={submitting}
-        >
-          {submitting ? "Logging in..." : "Log In"}
-        </button>
-
-        <p className="text-center mt-3 mb-0 small">
-          Don't have an account? <Link to="/signup">Sign Up</Link>
         </p>
-      </form>
+      </div>
     </div>
   )
 }

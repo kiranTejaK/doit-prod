@@ -44,7 +44,7 @@ def read_comments(
     count_statement = select(func.count()).select_from(statement.subquery())
     count = session.execute(count_statement).scalar_one()
     statement = statement.offset(skip).limit(limit)
-    results = session.execute(statement).scalars().all()
+    results = session.execute(statement).all()
 
     comments_public = []
     for comment, user in results:
@@ -70,11 +70,12 @@ def create_comment(
     project = session.get(Project, task.project_id)
     if not current_user.is_superuser:
         if project.owner_id != current_user.id:
-           member = session.get(ProjectMember, (project.id, current_user.id))
-           if not member:
-               raise HTTPException(status_code=400, detail="Not enough permissions")
+            member = session.get(ProjectMember, (project.id, current_user.id))
+            if not member:
+                raise HTTPException(status_code=400, detail="Not enough permissions")
 
-    comment = Comment(**comment_in.model_dump(), user_id= current_user.id)
+    comment_data = comment_in.model_dump(exclude={"attachment_ids"})
+    comment = Comment(**comment_data, user_id=current_user.id)
     session.add(comment)
     session.commit()
     session.refresh(comment)
@@ -84,15 +85,15 @@ def create_comment(
         for att_id in comment_in.attachment_ids:
             attachment = session.get(Attachment, att_id)
             if attachment:
-                # Optional: Check if attachment belongs to task
                 if attachment.task_id == comment.task_id:
-                     attachment.comment_id = comment.id
-                     session.add(attachment)
+                    attachment.comment_id = comment.id
+                    session.add(attachment)
         session.commit()
 
-    # TODO: Log activity (Task Commented)
+    comment_public = CommentPublic.model_validate(comment)
+    comment_public.user_full_name = current_user.full_name or current_user.email
 
-    return comment
+    return comment_public
 
 
 @router.delete("/{id}", response_model=Message)

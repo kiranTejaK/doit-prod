@@ -1,240 +1,255 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
-import api from "@/api"
-import useCustomToast from "@/hooks/useCustomToast"
+import { ChevronLeft, ChevronRight, FolderKanban, Loader2, Plus } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useCreateProject, useProjects } from "@/hooks/useProjects"
+import { useWorkspaces } from "@/hooks/useWorkspaces"
+import { useToast } from "@/hooks/use-toast"
 
 const PER_PAGE = 5
 
 export default function ProjectsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const page = parseInt(searchParams.get("page") || "1", 10)
-  const [projects, setProjects] = useState<any[]>([])
-  const [count, setCount] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const { showSuccessToast, showErrorToast } = useCustomToast()
+  const skip = (page - 1) * PER_PAGE
 
-  // Add Project Modal
+  const { data, isLoading } = useProjects({ skip, limit: PER_PAGE })
+  const { data: wsData } = useWorkspaces({ limit: 100 })
+  const createProject = useCreateProject()
+  const { toast } = useToast()
+
+  // Add Modal state
   const [showAdd, setShowAdd] = useState(false)
   const [addName, setAddName] = useState("")
   const [addDesc, setAddDesc] = useState("")
   const [addWsId, setAddWsId] = useState("")
-  const [addSubmitting, setAddSubmitting] = useState(false)
-  const [workspaces, setWorkspaces] = useState<any[]>([])
 
-  const fetchProjects = () => {
-    setLoading(true)
-    api
-      .get(`/api/v1/projects/?skip=${(page - 1) * PER_PAGE}&limit=${PER_PAGE}`)
-      .then((res) => {
-        setProjects(res.data.data || [])
-        setCount(res.data.count || 0)
-      })
-      .catch(() => showErrorToast("Failed to load projects"))
-      .finally(() => setLoading(false))
-  }
-
-  useEffect(() => {
-    fetchProjects()
-  }, [fetchProjects])
-
-  const openAddModal = () => {
-    setShowAdd(true)
-    api
-      .get("/api/v1/workspaces/?limit=100")
-      .then((res) => setWorkspaces(res.data.data || []))
-  }
+  const projects = data?.projects || []
+  const count = data?.count || 0
+  const totalPages = Math.ceil(count / PER_PAGE)
+  const workspaces = wsData?.workspaces || []
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
-    setAddSubmitting(true)
+    if (!addWsId) return
     try {
-      await api.post("/api/v1/projects/", {
+      await createProject.mutateAsync({
         name: addName,
         description: addDesc,
         workspace_id: addWsId,
       })
-      showSuccessToast("Project created.")
+      toast({
+        title: "Project created",
+        description: `Project "${addName}" created successfully.`,
+        variant: "success",
+      })
       setShowAdd(false)
       setAddName("")
       setAddDesc("")
       setAddWsId("")
-      fetchProjects()
-    } catch (err: any) {
-      showErrorToast(err.response?.data?.detail || "Failed")
-    } finally {
-      setAddSubmitting(false)
+    } catch {
+      toast({
+        title: "Error",
+        description: "Failed to create project.",
+        variant: "destructive",
+      })
     }
   }
 
-  const totalPages = Math.ceil(count / PER_PAGE)
-
   return (
-    <div>
-      <h2 className="pt-3 pb-3">Projects Management</h2>
-      <button className="btn btn-primary mb-3" onClick={openAddModal}>
-        <i className="bi bi-plus" /> Add Project
-      </button>
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Top Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Projects
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Organize tasks and track progress across workspaces.
+          </p>
+        </div>
+        <Button onClick={() => setShowAdd(true)} className="gap-2">
+          <Plus size={16} /> Add Project
+        </Button>
+      </div>
 
-      {loading ? (
-        <div className="text-center p-4">
-          <div className="spinner-border" role="status" />
+      {isLoading ? (
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent className="p-4">
+                <Skeleton className="h-6 w-1/3 mb-2" />
+                <Skeleton className="h-4 w-1/2" />
+              </CardContent>
+            </Card>
+          ))}
         </div>
       ) : projects.length === 0 ? (
-        <div className="text-center p-5 text-secondary">
-          <i className="bi bi-grid fs-1 d-block mb-2" />
-          <h5>No projects yet</h5>
-          <p>Create a project to get started</p>
-        </div>
+        <Card className="border-dashed py-12 text-center">
+          <CardContent className="space-y-3">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+              <FolderKanban size={24} />
+            </div>
+            <h3 className="text-lg font-medium text-foreground">No projects yet</h3>
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+              Create a project inside a workspace to start assigning and tracking tasks.
+            </p>
+            <Button onClick={() => setShowAdd(true)} className="gap-2 mt-2">
+              <Plus size={16} /> Create Project
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <>
-          <div className="table-responsive">
-            <table className="table table-hover">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Description</th>
-                  <th>Workspace</th>
-                  <th>ID</th>
-                </tr>
-              </thead>
-              <tbody>
-                {projects.map((p: any) => (
-                  <tr key={p.id}>
-                    <td>
-                      <Link
-                        to={`/projects/${p.id}`}
-                        className="fw-bold text-decoration-none"
-                      >
-                        {p.name}
-                      </Link>
-                    </td>
-                    <td className={p.description ? "" : "text-secondary"}>
-                      {p.description || "N/A"}
-                    </td>
-                    <td>{p.workspace_name || p.workspace_id}</td>
-                    <td className="text-truncate" style={{ maxWidth: "150px" }}>
-                      {p.id}
-                    </td>
+          {/* Table */}
+          <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left">
+                <thead className="bg-muted/50 text-xs font-semibold text-muted-foreground uppercase border-b border-border">
+                  <tr>
+                    <th className="px-4 py-3.5">Name</th>
+                    <th className="px-4 py-3.5">Description</th>
+                    <th className="px-4 py-3.5">Workspace</th>
+                    <th className="px-4 py-3.5 text-right">Project ID</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {projects.map((p) => (
+                    <tr key={p.id} className="hover:bg-accent/40 transition-colors">
+                      <td className="px-4 py-3.5 font-semibold text-foreground">
+                        <Link
+                          to={`/projects/${p.id}`}
+                          className="hover:text-primary transition-colors inline-flex items-center gap-2"
+                        >
+                          <FolderKanban size={16} className="text-muted-foreground" />
+                          {p.name}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-3.5 text-muted-foreground">
+                        {p.description || "No description"}
+                      </td>
+                      <td className="px-4 py-3.5 font-medium text-foreground">
+                        {p.workspace_name || p.workspace_id}
+                      </td>
+                      <td className="px-4 py-3.5 text-right font-mono text-xs text-muted-foreground">
+                        {p.id.slice(0, 8)}...
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
+
+          {/* Pagination */}
           {totalPages > 1 && (
-            <nav className="d-flex justify-content-end">
-              <ul className="pagination pagination-sm">
-                <li className={`page-item ${page <= 1 ? "disabled" : ""}`}>
-                  <button
-                    className="page-link"
-                    onClick={() => setSearchParams({ page: String(page - 1) })}
-                  >
-                    Prev
-                  </button>
-                </li>
-                {Array.from({ length: totalPages }, (_, i) => (
-                  <li
-                    key={i + 1}
-                    className={`page-item ${page === i + 1 ? "active" : ""}`}
-                  >
-                    <button
-                      className="page-link"
-                      onClick={() => setSearchParams({ page: String(i + 1) })}
-                    >
-                      {i + 1}
-                    </button>
-                  </li>
-                ))}
-                <li
-                  className={`page-item ${page >= totalPages ? "disabled" : ""}`}
+            <div className="flex items-center justify-between text-xs text-muted-foreground pt-2">
+              <span>
+                Showing {skip + 1}–{Math.min(skip + PER_PAGE, count)} of {count}
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  disabled={page <= 1}
+                  onClick={() => setSearchParams({ page: String(page - 1) })}
                 >
-                  <button
-                    className="page-link"
-                    onClick={() => setSearchParams({ page: String(page + 1) })}
-                  >
-                    Next
-                  </button>
-                </li>
-              </ul>
-            </nav>
+                  <ChevronLeft size={14} />
+                </Button>
+                <span className="px-2 font-medium text-foreground">
+                  {page} / {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setSearchParams({ page: String(page + 1) })}
+                >
+                  <ChevronRight size={14} />
+                </Button>
+              </div>
+            </div>
           )}
         </>
       )}
 
       {/* Add Project Modal */}
-      {showAdd && (
-        <div
-          className="modal show d-block"
-          style={{ backgroundColor: "rgba(0,0,0,0.5)" }}
-        >
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <form onSubmit={handleAdd}>
-                <div className="modal-header">
-                  <h5 className="modal-title">Add Project</h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={() => setShowAdd(false)}
-                  />
-                </div>
-                <div className="modal-body">
-                  <div className="mb-3">
-                    <label className="form-label">Name *</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      required
-                      value={addName}
-                      onChange={(e) => setAddName(e.target.value)}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Description</label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      value={addDesc}
-                      onChange={(e) => setAddDesc(e.target.value)}
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label">Workspace *</label>
-                    <select
-                      className="form-select"
-                      required
-                      value={addWsId}
-                      onChange={(e) => setAddWsId(e.target.value)}
-                    >
-                      <option value="">Select a workspace</option>
-                      {workspaces.map((ws: any) => (
-                        <option key={ws.id} value={ws.id}>
-                          {ws.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-                <div className="modal-footer">
-                  <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => setShowAdd(false)}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="btn btn-primary"
-                    disabled={addSubmitting}
-                  >
-                    {addSubmitting ? "Saving..." : "Save"}
-                  </button>
-                </div>
-              </form>
+      <Dialog open={showAdd} onOpenChange={setShowAdd}>
+        <DialogContent>
+          <form onSubmit={handleAdd}>
+            <DialogHeader>
+              <DialogTitle>Add Project</DialogTitle>
+              <DialogDescription>
+                Create a new project within an existing workspace.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="proj-name">Project Name *</Label>
+                <Input
+                  id="proj-name"
+                  required
+                  placeholder="e.g. Website Redesign"
+                  value={addName}
+                  onChange={(e) => setAddName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="proj-desc">Description</Label>
+                <Input
+                  id="proj-desc"
+                  placeholder="Optional description"
+                  value={addDesc}
+                  onChange={(e) => setAddDesc(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="proj-ws">Workspace *</Label>
+                <select
+                  id="proj-ws"
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  required
+                  value={addWsId}
+                  onChange={(e) => setAddWsId(e.target.value)}
+                >
+                  <option value="">Select a workspace...</option>
+                  {workspaces.map((ws) => (
+                    <option key={ws.id} value={ws.id}>
+                      {ws.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowAdd(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={createProject.isPending}>
+                {createProject.isPending ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Saving...
+                  </>
+                ) : (
+                  "Create Project"
+                )}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
