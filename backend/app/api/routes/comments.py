@@ -1,4 +1,3 @@
-
 import uuid
 from typing import Any
 
@@ -40,7 +39,12 @@ def read_comments(
             if not member and project.is_private:
                 raise HTTPException(status_code=400, detail="Not enough permissions")
 
-    statement = select(Comment, User).join(User).where(Comment.task_id == task_id).order_by(Comment.created_at)
+    statement = (
+        select(Comment, User)
+        .join(User)
+        .where(Comment.task_id == task_id)
+        .order_by(Comment.created_at)
+    )
     count_statement = select(func.count()).select_from(statement.subquery())
     count = session.execute(count_statement).scalar_one()
     statement = statement.offset(skip).limit(limit)
@@ -108,7 +112,7 @@ def delete_comment(
         raise HTTPException(status_code=404, detail="Comment not found")
 
     if not current_user.is_superuser and comment.user_id != current_user.id:
-         raise HTTPException(status_code=400, detail="Not enough permissions")
+        raise HTTPException(status_code=400, detail="Not enough permissions")
 
     session.delete(comment)
     session.commit()

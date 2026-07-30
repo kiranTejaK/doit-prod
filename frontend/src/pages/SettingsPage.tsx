@@ -1,8 +1,23 @@
+import {
+  AlertTriangle,
+  KeyRound,
+  Loader2,
+  Moon,
+  Palette,
+  ShieldAlert,
+  Sun,
+  User,
+} from "lucide-react"
 import { useState } from "react"
-import { AlertTriangle, KeyRound, Loader2, Moon, Palette, ShieldAlert, Sun, User } from "lucide-react"
 import api from "@/api"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import {
   Dialog,
   DialogContent,
@@ -13,9 +28,9 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useToast } from "@/hooks/use-toast"
 import useAuth from "@/hooks/useAuth"
 import { useTheme } from "@/hooks/useTheme"
-import { useToast } from "@/hooks/use-toast"
 
 export default function SettingsPage() {
   const { user: currentUser, logout } = useAuth()
@@ -160,8 +175,12 @@ function ProfileTab({ user }: { user: any }) {
           </div>
 
           <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">Email Address</Label>
-            <p className="text-sm font-semibold text-foreground">{profile.email}</p>
+            <Label className="text-xs text-muted-foreground">
+              Email Address
+            </Label>
+            <p className="text-sm font-semibold text-foreground">
+              {profile.email}
+            </p>
           </div>
 
           <div className="pt-2">
@@ -218,7 +237,12 @@ function ProfileTab({ user }: { user: any }) {
             </div>
 
             <DialogFooter className="gap-2">
-              <Button type="button" variant="outline" onClick={handleCancel} disabled={submitting}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={submitting}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={submitting}>
@@ -429,7 +453,8 @@ function DangerTab({ logout }: { logout: () => void }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-xs text-muted-foreground">
-          Once deleted, your profile and personal preferences cannot be recovered.
+          Once deleted, your profile and personal preferences cannot be
+          recovered.
         </p>
         <Button variant="destructive" onClick={() => setShowConfirm(true)}>
           Delete My Account
@@ -442,14 +467,23 @@ function DangerTab({ logout }: { logout: () => void }) {
                 <AlertTriangle size={20} /> Confirmation Required
               </DialogTitle>
               <DialogDescription>
-                Are you completely sure? This action is permanent and cannot be undone.
+                Are you completely sure? This action is permanent and cannot be
+                undone.
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="pt-4">
-              <Button variant="outline" onClick={() => setShowConfirm(false)} disabled={submitting}>
+              <Button
+                variant="outline"
+                onClick={() => setShowConfirm(false)}
+                disabled={submitting}
+              >
                 Cancel
               </Button>
-              <Button variant="destructive" onClick={handleDelete} disabled={submitting}>
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={submitting}
+              >
                 {submitting ? (
                   <>
                     <Loader2 size={16} className="animate-spin" /> Deleting...

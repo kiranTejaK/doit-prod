@@ -1,5 +1,5 @@
 import uuid
-from typing import Any, List, Tuple
+
 from fastapi import HTTPException
 from pydantic import BaseModel
 from sqlalchemy import func, select
@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.config import settings
 from app.core.redis_client import clear_cache
-from app.models import Project, ProjectMember, User, Workspace, WorkspaceMember
+from app.models import Project, ProjectMember, User, WorkspaceMember
 from app.schemas import (
     Message,
     ProjectCreate,
@@ -15,11 +15,15 @@ from app.schemas import (
     ProjectsPublic,
     ProjectUpdate,
 )
+from app.services.auth_policy import (
+    verify_project_access,
+    verify_workspace_membership,
+)
+
 
 class ProjectMemberCreate(BaseModel):
     user_id: uuid.UUID
     role: str = "member"
-from app.services.auth_policy import verify_project_access, verify_workspace_membership
 
 
 def get_projects(
@@ -36,16 +40,20 @@ def get_projects(
         statement = select(Project).options(joinedload(Project.workspace))
         if workspace_id:
             statement = statement.where(Project.workspace_id == workspace_id)
-        
+
         count_statement = select(func.count()).select_from(statement.subquery())
         count = session.execute(count_statement).scalar_one()
-        
+
         statement = statement.offset(skip).limit(limit)
         projects = session.execute(statement).scalars().all()
     else:
         if workspace_id:
             verify_workspace_membership(session, workspace_id, current_user)
-            statement = select(Project).options(joinedload(Project.workspace)).where(Project.workspace_id == workspace_id)
+            statement = (
+                select(Project)
+                .options(joinedload(Project.workspace))
+                .where(Project.workspace_id == workspace_id)
+            )
             all_projects = session.execute(statement).scalars().all()
 
             visible_projects = []
@@ -63,17 +71,19 @@ def get_projects(
             statement = (
                 select(Project)
                 .options(joinedload(Project.workspace))
-                .join(ProjectMember, Project.id == ProjectMember.project_id, isouter=True)
+                .join(
+                    ProjectMember, Project.id == ProjectMember.project_id, isouter=True
+                )
                 .where(
-                    (Project.owner_id == current_user.id) |
-                    (ProjectMember.user_id == current_user.id)
+                    (Project.owner_id == current_user.id)
+                    | (ProjectMember.user_id == current_user.id)
                 )
                 .distinct()
             )
-            
+
             count_statement = select(func.count()).select_from(statement.subquery())
             count = session.execute(count_statement).scalar_one()
-            
+
             statement = statement.offset(skip).limit(limit)
             projects = session.execute(statement).scalars().all()
 
@@ -113,10 +123,15 @@ def create_project(
 
 
 def update_project(
-    session: Session, current_user: User, project_id: uuid.UUID, project_in: ProjectUpdate
+    session: Session,
+    current_user: User,
+    project_id: uuid.UUID,
+    project_in: ProjectUpdate,
 ) -> Project:
     """Update a project (requires ownership or superuser)."""
-    project = verify_project_access(session, project_id, current_user, require_owner=True)
+    project = verify_project_access(
+        session, project_id, current_user, require_owner=True
+    )
 
     update_dict = project_in.model_dump(exclude_unset=True)
     for key, value in update_dict.items():
@@ -130,9 +145,13 @@ def update_project(
     return project
 
 
-def delete_project(session: Session, current_user: User, project_id: uuid.UUID) -> Message:
+def delete_project(
+    session: Session, current_user: User, project_id: uuid.UUID
+) -> Message:
     """Delete a project (requires ownership or superuser)."""
-    project = verify_project_access(session, project_id, current_user, require_owner=True)
+    project = verify_project_access(
+        session, project_id, current_user, require_owner=True
+    )
 
     session.delete(project)
     session.commit()
@@ -142,10 +161,15 @@ def delete_project(session: Session, current_user: User, project_id: uuid.UUID) 
 
 
 def add_project_member(
-    session: Session, current_user: User, project_id: uuid.UUID, member_in: ProjectMemberCreate
+    session: Session,
+    current_user: User,
+    project_id: uuid.UUID,
+    member_in: ProjectMemberCreate,
 ) -> Message:
     """Add a member to a project."""
-    project = verify_project_access(session, project_id, current_user, require_owner=True)
+    project = verify_project_access(
+        session, project_id, current_user, require_owner=True
+    )
 
     user = session.get(User, member_in.user_id)
     if not user:
@@ -153,13 +177,17 @@ def add_project_member(
 
     wm = session.get(WorkspaceMember, (project.workspace_id, member_in.user_id))
     if not wm:
-        raise HTTPException(status_code=400, detail="User must be a member of the workspace first")
+        raise HTTPException(
+            status_code=400, detail="User must be a member of the workspace first"
+        )
 
     pm = session.get(ProjectMember, (project_id, member_in.user_id))
     if pm:
         raise HTTPException(status_code=400, detail="User already in project")
 
-    member = ProjectMember(project_id=project_id, user_id=member_in.user_id, role=member_in.role)
+    member = ProjectMember(
+        project_id=project_id, user_id=member_in.user_id, role=member_in.role
+    )
     session.add(member)
     session.commit()
 
@@ -179,13 +207,15 @@ def get_project_members(
     )
     members = []
     for pm, user in session.execute(statement).all():
-        members.append({
-            "id": user.id,
-            "full_name": user.full_name,
-            "email": user.email,
-            "avatar_url": user.avatar_url,
-            "role": pm.role,
-            "project_id": pm.project_id
-        })
+        members.append(
+            {
+                "id": user.id,
+                "full_name": user.full_name,
+                "email": user.email,
+                "avatar_url": user.avatar_url,
+                "role": pm.role,
+                "project_id": pm.project_id,
+            }
+        )
 
     return {"data": members, "count": len(members)}

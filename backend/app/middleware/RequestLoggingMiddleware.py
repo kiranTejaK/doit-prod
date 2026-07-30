@@ -9,6 +9,7 @@ from starlette.responses import Response
 logger = structlog.get_logger(__name__)
 CORRELATION_HEADER = "X-Correlation-ID"
 
+
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         correlation_id = request.headers.get(CORRELATION_HEADER) or str(uuid.uuid4())
@@ -22,7 +23,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             "request_started",
             method=request.method,
             path=request.url.path,
-            client_host=request.client.host if request.client else None
+            client_host=request.client.host if request.client else None,
         )
 
         try:
@@ -36,7 +37,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
                 method=request.method,
                 path=request.url.path,
                 status_code=response.status_code,
-                duration=round(process_time, 4)
+                duration=round(process_time, 4),
             )
             return response
         finally:

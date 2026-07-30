@@ -1,6 +1,6 @@
+import { ArrowLeft, Eye, EyeOff, KeyRound, Loader2 } from "lucide-react"
 import { useState } from "react"
-import { useNavigate, Link } from "react-router-dom"
-import { Eye, EyeOff, KeyRound, Loader2, ArrowLeft } from "lucide-react"
+import { Link, useNavigate } from "react-router-dom"
 import api from "@/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -62,7 +62,6 @@ export default function ResetPassword() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
-
         {/* Brand */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary text-primary-foreground font-bold text-lg mb-4">
@@ -79,7 +78,6 @@ export default function ResetPassword() {
         {/* Card */}
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-4">
-
             {error && (
               <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
                 {error}
@@ -137,11 +135,7 @@ export default function ResetPassword() {
               </div>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={submitting}
-            >
+            <Button type="submit" className="w-full" disabled={submitting}>
               {submitting ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
@@ -159,7 +153,10 @@ export default function ResetPassword() {
 
         {/* Footer */}
         <p className="text-center text-sm text-muted-foreground mt-6">
-          <Link to="/login" className="inline-flex items-center gap-1 text-primary font-medium hover:underline">
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-1 text-primary font-medium hover:underline"
+          >
             <ArrowLeft size={14} />
             Back to Sign In
           </Link>

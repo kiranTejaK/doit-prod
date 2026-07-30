@@ -1,5 +1,4 @@
-import { useState, useMemo } from "react"
-import { useParams, Link } from "react-router-dom"
+import { useQueryClient } from "@tanstack/react-query"
 import {
   ArrowLeft,
   ArrowUpDown,
@@ -20,6 +19,8 @@ import {
   Users,
   X,
 } from "lucide-react"
+import { useMemo, useState } from "react"
+import { Link, useParams } from "react-router-dom"
 import api from "@/api"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -46,9 +47,8 @@ import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useProjectDetail } from "@/hooks/useProjects"
 import { useToast } from "@/hooks/use-toast"
-import { useQueryClient } from "@tanstack/react-query"
+import { useProjectDetail } from "@/hooks/useProjects"
 
 const WORKFLOW_STAGES = [
   {
@@ -85,12 +85,16 @@ export default function ProjectDetailPage() {
   const { toast } = useToast()
 
   // Section collapse state (true = expanded, false = collapsed)
-  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({})
+  const [collapsedSections, setCollapsedSections] = useState<
+    Record<string, boolean>
+  >({})
 
   // Controls state
   const [search, setSearch] = useState("")
   const [priorityFilter, setPriorityFilter] = useState("all")
-  const [sortBy, setSortBy] = useState<"title" | "priority" | "due_date">("title")
+  const [sortBy, setSortBy] = useState<"title" | "priority" | "due_date">(
+    "title",
+  )
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
 
   // Add Task Modal
@@ -144,7 +148,8 @@ export default function ProjectDetailPage() {
       const matchesSearch =
         t.title.toLowerCase().includes(search.toLowerCase()) ||
         (t.description || "").toLowerCase().includes(search.toLowerCase())
-      const matchesPriority = priorityFilter === "all" || (t.priority || "medium") === priorityFilter
+      const matchesPriority =
+        priorityFilter === "all" || (t.priority || "medium") === priorityFilter
       return matchesSearch && matchesPriority
     })
   }, [tasks, search, priorityFilter])
@@ -187,7 +192,8 @@ export default function ProjectDetailPage() {
         </div>
         <h2 className="text-2xl font-bold text-foreground">Access Denied</h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          You are not a member of this project. Project details, tasks, and member lists are restricted to Project Members.
+          You are not a member of this project. Project details, tasks, and
+          member lists are restricted to Project Members.
         </p>
         <Button variant="outline" asChild className="mt-2">
           <Link to="/projects">
@@ -278,7 +284,8 @@ export default function ProjectDetailPage() {
       queryClient.setQueryData(["project", projectId], previousProjectData)
       toast({
         title: "Error moving task",
-        description: err.response?.data?.detail || "Failed to update task status.",
+        description:
+          err.response?.data?.detail || "Failed to update task status.",
         variant: "destructive",
       })
     }
@@ -389,7 +396,12 @@ export default function ProjectDetailPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Top Header */}
       <div>
-        <Button variant="ghost" size="sm" className="mb-2 -ml-2 text-muted-foreground gap-1.5" asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mb-2 -ml-2 text-muted-foreground gap-1.5"
+          asChild
+        >
           <Link to="/projects">
             <ArrowLeft size={14} /> Projects
           </Link>
@@ -404,12 +416,19 @@ export default function ProjectDetailPage() {
                 {project.name}
               </h1>
               {project.description && (
-                <p className="text-sm text-muted-foreground">{project.description}</p>
+                <p className="text-sm text-muted-foreground">
+                  {project.description}
+                </p>
               )}
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={openMembers} className="gap-1.5">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openMembers}
+              className="gap-1.5"
+            >
               <Users size={15} /> Members
             </Button>
             <Button size="sm" onClick={openAddTaskModal} className="gap-1.5">
@@ -446,7 +465,10 @@ export default function ProjectDetailPage() {
         </div>
 
         <div className="text-xs text-muted-foreground">
-          Total Tasks: <span className="font-semibold text-foreground">{filteredTasks.length}</span>
+          Total Tasks:{" "}
+          <span className="font-semibold text-foreground">
+            {filteredTasks.length}
+          </span>
         </div>
       </div>
 
@@ -469,11 +491,24 @@ export default function ProjectDetailPage() {
                 className="flex items-center justify-between px-4 py-3 bg-muted/30 cursor-pointer select-none border-b border-border/50 hover:bg-muted/50 transition-colors"
               >
                 <div className="flex items-center gap-2.5">
-                  <Button variant="ghost" size="icon-sm" className="h-6 w-6 p-0 text-muted-foreground">
-                    {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="h-6 w-6 p-0 text-muted-foreground"
+                  >
+                    {isCollapsed ? (
+                      <ChevronRight size={16} />
+                    ) : (
+                      <ChevronDown size={16} />
+                    )}
                   </Button>
-                  <h3 className="font-semibold text-sm text-foreground">{stage.title}</h3>
-                  <Badge variant={stage.badgeVariant} className="text-[11px] h-5 px-2">
+                  <h3 className="font-semibold text-sm text-foreground">
+                    {stage.title}
+                  </h3>
+                  <Badge
+                    variant={stage.badgeVariant}
+                    className="text-[11px] h-5 px-2"
+                  >
                     {stageTasks.length}
                   </Badge>
                 </div>
@@ -485,18 +520,27 @@ export default function ProjectDetailPage() {
                   <table className="w-full text-sm text-left">
                     <thead className="bg-muted/20 text-xs font-semibold text-muted-foreground uppercase border-b border-border/50">
                       <tr>
-                        <th className="px-4 py-2.5 cursor-pointer select-none" onClick={() => toggleSort("title")}>
+                        <th
+                          className="px-4 py-2.5 cursor-pointer select-none"
+                          onClick={() => toggleSort("title")}
+                        >
                           <div className="flex items-center gap-1">
                             Task Name <ArrowUpDown size={12} />
                           </div>
                         </th>
-                        <th className="px-4 py-2.5 cursor-pointer select-none" onClick={() => toggleSort("priority")}>
+                        <th
+                          className="px-4 py-2.5 cursor-pointer select-none"
+                          onClick={() => toggleSort("priority")}
+                        >
                           <div className="flex items-center gap-1">
                             Priority <ArrowUpDown size={12} />
                           </div>
                         </th>
                         <th className="px-4 py-2.5">Move To Stage</th>
-                        <th className="px-4 py-2.5 cursor-pointer select-none" onClick={() => toggleSort("due_date")}>
+                        <th
+                          className="px-4 py-2.5 cursor-pointer select-none"
+                          onClick={() => toggleSort("due_date")}
+                        >
                           <div className="flex items-center gap-1">
                             Due Date <ArrowUpDown size={12} />
                           </div>
@@ -507,7 +551,10 @@ export default function ProjectDetailPage() {
                     <tbody className="divide-y divide-border/50">
                       {stageTasks.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="px-4 py-6 text-center text-xs text-muted-foreground italic">
+                          <td
+                            colSpan={5}
+                            className="px-4 py-6 text-center text-xs text-muted-foreground italic"
+                          >
                             No tasks in {stage.title}.
                           </td>
                         </tr>
@@ -525,17 +572,29 @@ export default function ProjectDetailPage() {
                                   className="mt-0.5 shrink-0 text-muted-foreground hover:text-primary transition-colors"
                                   onClick={(e) => {
                                     e.stopPropagation()
-                                    handleMoveStatus(t.id, t.status === "done" ? "todo" : "done")
+                                    handleMoveStatus(
+                                      t.id,
+                                      t.status === "done" ? "todo" : "done",
+                                    )
                                   }}
                                 >
                                   {t.status === "done" ? (
-                                    <CheckCircle2 size={16} className="text-success" />
+                                    <CheckCircle2
+                                      size={16}
+                                      className="text-success"
+                                    />
                                   ) : (
                                     <Circle size={16} />
                                   )}
                                 </button>
                                 <div>
-                                  <span className={t.status === "done" ? "line-through text-muted-foreground" : ""}>
+                                  <span
+                                    className={
+                                      t.status === "done"
+                                        ? "line-through text-muted-foreground"
+                                        : ""
+                                    }
+                                  >
                                     {t.title}
                                   </span>
                                   {t.description && (
@@ -550,7 +609,8 @@ export default function ProjectDetailPage() {
                             <td className="px-4 py-3">
                               <Badge
                                 variant={
-                                  t.priority === "urgent" || t.priority === "high"
+                                  t.priority === "urgent" ||
+                                  t.priority === "high"
                                     ? "destructive"
                                     : t.priority === "medium"
                                       ? "warning"
@@ -562,10 +622,15 @@ export default function ProjectDetailPage() {
                               </Badge>
                             </td>
 
-                            <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                            <td
+                              className="px-4 py-3"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <select
                                 value={t.status || "todo"}
-                                onChange={(e) => handleMoveStatus(t.id, e.target.value)}
+                                onChange={(e) =>
+                                  handleMoveStatus(t.id, e.target.value)
+                                }
                                 className="flex h-8 rounded-md border border-input bg-background px-2 py-0 text-xs shadow-xs focus:ring-1 focus:ring-primary"
                               >
                                 <option value="todo">To Do</option>
@@ -578,14 +643,18 @@ export default function ProjectDetailPage() {
                             <td className="px-4 py-3 text-xs text-muted-foreground">
                               {t.due_date ? (
                                 <span className="flex items-center gap-1">
-                                  <Clock size={12} /> {new Date(t.due_date).toLocaleDateString()}
+                                  <Clock size={12} />{" "}
+                                  {new Date(t.due_date).toLocaleDateString()}
                                 </span>
                               ) : (
                                 "—"
                               )}
                             </td>
 
-                            <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                            <td
+                              className="px-4 py-3 text-right"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                   <Button variant="ghost" size="icon-sm">
@@ -593,24 +662,43 @@ export default function ProjectDetailPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => openTaskDetail(t)}>
-                                    <MessageSquare size={14} className="mr-2" /> View Details & Comments
+                                  <DropdownMenuItem
+                                    onClick={() => openTaskDetail(t)}
+                                  >
+                                    <MessageSquare size={14} className="mr-2" />{" "}
+                                    View Details & Comments
                                   </DropdownMenuItem>
                                   <DropdownMenuSub>
                                     <DropdownMenuSubTrigger>
                                       Move to...
                                     </DropdownMenuSubTrigger>
                                     <DropdownMenuSubContent>
-                                      <DropdownMenuItem onClick={() => handleMoveStatus(t.id, "todo")}>
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          handleMoveStatus(t.id, "todo")
+                                        }
+                                      >
                                         To Do
                                       </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => handleMoveStatus(t.id, "in_progress")}>
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          handleMoveStatus(t.id, "in_progress")
+                                        }
+                                      >
                                         In Progress
                                       </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => handleMoveStatus(t.id, "review")}>
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          handleMoveStatus(t.id, "review")
+                                        }
+                                      >
                                         In Review
                                       </DropdownMenuItem>
-                                      <DropdownMenuItem onClick={() => handleMoveStatus(t.id, "done")}>
+                                      <DropdownMenuItem
+                                        onClick={() =>
+                                          handleMoveStatus(t.id, "done")
+                                        }
+                                      >
                                         Completed
                                       </DropdownMenuItem>
                                     </DropdownMenuSubContent>
@@ -619,7 +707,8 @@ export default function ProjectDetailPage() {
                                     onClick={() => handleDeleteTask(t.id)}
                                     className="text-red-600 dark:text-red-400 focus:text-red-600"
                                   >
-                                    <Trash2 size={14} className="mr-2" /> Delete Task
+                                    <Trash2 size={14} className="mr-2" /> Delete
+                                    Task
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -726,7 +815,11 @@ export default function ProjectDetailPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowAddTask(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAddTask(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={taskSubmitting}>
@@ -797,7 +890,9 @@ export default function ProjectDetailPage() {
                           {(m.full_name || m.email)[0].toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="font-medium text-foreground">{m.full_name || m.email}</span>
+                      <span className="font-medium text-foreground">
+                        {m.full_name || m.email}
+                      </span>
                     </div>
                     <Badge variant="secondary" className="text-[10px]">
                       {m.role || "member"}
@@ -838,7 +933,8 @@ export default function ProjectDetailPage() {
                 </Badge>
                 <Badge
                   variant={
-                    selectedTask.priority === "high" || selectedTask.priority === "urgent"
+                    selectedTask.priority === "high" ||
+                    selectedTask.priority === "urgent"
                       ? "destructive"
                       : "secondary"
                   }
@@ -849,7 +945,9 @@ export default function ProjectDetailPage() {
               </div>
 
               <div className="space-y-1">
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Description</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase">
+                  Description
+                </p>
                 <p className="text-sm text-foreground">
                   {selectedTask.description || "No description provided."}
                 </p>
@@ -864,17 +962,27 @@ export default function ProjectDetailPage() {
                 </p>
                 <div className="space-y-2">
                   {comments.length === 0 ? (
-                    <p className="text-xs text-muted-foreground italic">No comments yet.</p>
+                    <p className="text-xs text-muted-foreground italic">
+                      No comments yet.
+                    </p>
                   ) : (
                     comments.map((c) => (
-                      <div key={c.id} className="p-3 rounded-lg bg-accent/40 text-xs space-y-1">
+                      <div
+                        key={c.id}
+                        className="p-3 rounded-lg bg-accent/40 text-xs space-y-1"
+                      >
                         <div className="flex items-center justify-between font-semibold text-foreground">
                           <span>{c.user_full_name || "User"}</span>
                           <span className="text-[10px] text-muted-foreground">
-                            {new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(c.created_at).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </span>
                         </div>
-                        <p className="text-muted-foreground whitespace-pre-wrap">{c.content}</p>
+                        <p className="text-muted-foreground whitespace-pre-wrap">
+                          {c.content}
+                        </p>
                       </div>
                     ))
                   )}
@@ -886,7 +994,12 @@ export default function ProjectDetailPage() {
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                   />
-                  <Button type="submit" size="sm" disabled={commentSubmitting} className="w-full">
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={commentSubmitting}
+                    className="w-full"
+                  >
                     {commentSubmitting ? "Posting..." : "Post Comment"}
                   </Button>
                 </form>

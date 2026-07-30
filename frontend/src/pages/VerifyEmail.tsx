@@ -1,6 +1,6 @@
+import { AlertCircle, ArrowLeft, CheckCircle2, Loader2 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { CheckCircle2, AlertCircle, Loader2, ArrowLeft } from "lucide-react"
 import api from "@/api"
 import { Button } from "@/components/ui/button"
 
@@ -51,12 +51,10 @@ export default function VerifyEmail() {
               Email Verified!
             </h2>
             <p className="text-sm text-muted-foreground">
-              Your email has been successfully verified. You can now access your DOit account.
+              Your email has been successfully verified. You can now access your
+              DOit account.
             </p>
-            <Button
-              className="w-full mt-2"
-              onClick={() => navigate("/login")}
-            >
+            <Button className="w-full mt-2" onClick={() => navigate("/login")}>
               Continue to Sign In
             </Button>
           </div>

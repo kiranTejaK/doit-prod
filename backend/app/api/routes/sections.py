@@ -1,4 +1,3 @@
-
 import uuid
 from typing import Any
 
@@ -24,7 +23,7 @@ def read_sections(
     current_user: CurrentUser,
     project_id: uuid.UUID,
     skip: int = 0,
-    limit: int = 100
+    limit: int = 100,
 ) -> Any:
     """
     Retrieve sections for a project. Project ID is required.
@@ -36,13 +35,17 @@ def read_sections(
 
     if not current_user.is_superuser:
         if project.owner_id != current_user.id:
-             member = session.get(ProjectMember, (project_id, current_user.id))
-             # If project is private and user is not member -> 400/404
-             if not member and project.is_private:
-                  raise HTTPException(status_code=400, detail="Not a member of this project")
-             # If public, minimal access allowed? For now sections are part of project structure, so likely read access is fine for public projects.
+            member = session.get(ProjectMember, (project_id, current_user.id))
+            # If project is private and user is not member -> 400/404
+            if not member and project.is_private:
+                raise HTTPException(
+                    status_code=400, detail="Not a member of this project"
+                )
+            # If public, minimal access allowed? For now sections are part of project structure, so likely read access is fine for public projects.
 
-    statement = select(Section).where(Section.project_id == project_id).order_by(Section.order)
+    statement = (
+        select(Section).where(Section.project_id == project_id).order_by(Section.order)
+    )
     count_statement = select(func.count()).select_from(statement.subquery())
     count = session.execute(count_statement).scalar_one()
     statement = statement.offset(skip).limit(limit)
@@ -66,7 +69,9 @@ def create_section(
         if project.owner_id != current_user.id:
             member = session.get(ProjectMember, (project.id, current_user.id))
             if not member:
-                 raise HTTPException(status_code=400, detail="Not a member of this project")
+                raise HTTPException(
+                    status_code=400, detail="Not a member of this project"
+                )
             # Maybe restrict section creation to Editor/Admin role? For now all members.
 
     section = Section.model_validate(section_in)
@@ -92,11 +97,11 @@ def update_section(
         raise HTTPException(status_code=404, detail="Section not found")
 
     if not current_user.is_superuser:
-         project = session.get(Project, section.project_id)
-         if project.owner_id != current_user.id:
-             member = session.get(ProjectMember, (project.id, current_user.id))
-             if not member:
-                  raise HTTPException(status_code=400, detail="Not enough permissions")
+        project = session.get(Project, section.project_id)
+        if project.owner_id != current_user.id:
+            member = session.get(ProjectMember, (project.id, current_user.id))
+            if not member:
+                raise HTTPException(status_code=400, detail="Not enough permissions")
 
     update_dict = section_in.model_dump(exclude_unset=True)
     for key, value in update_dict.items():
@@ -119,10 +124,10 @@ def delete_section(
         raise HTTPException(status_code=404, detail="Section not found")
 
     if not current_user.is_superuser:
-         project = session.get(Project, section.project_id)
-         if project.owner_id != current_user.id:
-              # Only Project Owner can delete sections? Or maybe Admin role?
-              raise HTTPException(status_code=400, detail="Not enough permissions")
+        project = session.get(Project, section.project_id)
+        if project.owner_id != current_user.id:
+            # Only Project Owner can delete sections? Or maybe Admin role?
+            raise HTTPException(status_code=400, detail="Not enough permissions")
 
     session.delete(section)
     session.commit()

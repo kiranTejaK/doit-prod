@@ -1,10 +1,10 @@
+import { AlertTriangle, Check, Loader2, UserCheck } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
-import { AlertTriangle, Check, Loader2, UserCheck } from "lucide-react"
 import api from "@/api"
 import { Button } from "@/components/ui/button"
-import useAuth from "@/hooks/useAuth"
 import { useToast } from "@/hooks/use-toast"
+import useAuth from "@/hooks/useAuth"
 
 export default function AcceptInvite() {
   const [searchParams] = useSearchParams()
@@ -71,7 +71,8 @@ export default function AcceptInvite() {
             Invalid or Expired Invitation
           </h2>
           <p className="text-sm text-muted-foreground">
-            This invitation link is invalid or has expired. Please ask the workspace admin to send a new invite.
+            This invitation link is invalid or has expired. Please ask the
+            workspace admin to send a new invite.
           </p>
           <Button variant="outline" className="w-full" asChild>
             <Link to="/login">Go to Sign In</Link>
@@ -92,7 +93,8 @@ export default function AcceptInvite() {
             Join Workspace
           </h2>
           <p className="text-sm text-muted-foreground">
-            You have been invited to join a workspace on DOit. Please sign in or create an account to accept.
+            You have been invited to join a workspace on DOit. Please sign in or
+            create an account to accept.
           </p>
           <div className="flex flex-col gap-2 pt-2">
             <Button className="w-full" asChild>
@@ -124,7 +126,8 @@ export default function AcceptInvite() {
         {invitation.email !== user.email && (
           <div className="rounded-md border border-warning/30 bg-warning/10 p-3 text-xs text-warning-foreground text-left">
             <p className="font-semibold">Notice:</p>
-            This invitation was issued for <b>{invitation.email}</b>, but you are currently signed in as <b>{user.email}</b>.
+            This invitation was issued for <b>{invitation.email}</b>, but you
+            are currently signed in as <b>{user.email}</b>.
           </div>
         )}
 
@@ -146,7 +149,11 @@ export default function AcceptInvite() {
               </>
             )}
           </Button>
-          <Button variant="ghost" className="w-full text-muted-foreground" asChild>
+          <Button
+            variant="ghost"
+            className="w-full text-muted-foreground"
+            asChild
+          >
             <Link to="/">Cancel</Link>
           </Button>
         </div>

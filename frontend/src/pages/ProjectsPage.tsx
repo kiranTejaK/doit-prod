@@ -1,6 +1,12 @@
+import {
+  ChevronLeft,
+  ChevronRight,
+  FolderKanban,
+  Loader2,
+  Plus,
+} from "lucide-react"
 import { useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
-import { ChevronLeft, ChevronRight, FolderKanban, Loader2, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -14,9 +20,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useToast } from "@/hooks/use-toast"
 import { useCreateProject, useProjects } from "@/hooks/useProjects"
 import { useWorkspaces } from "@/hooks/useWorkspaces"
-import { useToast } from "@/hooks/use-toast"
 
 const PER_PAGE = 5
 
@@ -102,9 +108,12 @@ export default function ProjectsPage() {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
               <FolderKanban size={24} />
             </div>
-            <h3 className="text-lg font-medium text-foreground">No projects yet</h3>
+            <h3 className="text-lg font-medium text-foreground">
+              No projects yet
+            </h3>
             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-              Create a project inside a workspace to start assigning and tracking tasks.
+              Create a project inside a workspace to start assigning and
+              tracking tasks.
             </p>
             <Button onClick={() => setShowAdd(true)} className="gap-2 mt-2">
               <Plus size={16} /> Create Project
@@ -127,13 +136,19 @@ export default function ProjectsPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {projects.map((p) => (
-                    <tr key={p.id} className="hover:bg-accent/40 transition-colors">
+                    <tr
+                      key={p.id}
+                      className="hover:bg-accent/40 transition-colors"
+                    >
                       <td className="px-4 py-3.5 font-semibold text-foreground">
                         <Link
                           to={`/projects/${p.id}`}
                           className="hover:text-primary transition-colors inline-flex items-center gap-2"
                         >
-                          <FolderKanban size={16} className="text-muted-foreground" />
+                          <FolderKanban
+                            size={16}
+                            className="text-muted-foreground"
+                          />
                           {p.name}
                         </Link>
                       </td>
@@ -234,7 +249,11 @@ export default function ProjectsPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowAdd(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAdd(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={createProject.isPending}>

@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react"
-import { Link, Outlet, useLocation } from "react-router-dom"
 import {
   CheckSquare2,
   ChevronLeft,
+  FolderKanban,
+  Layers,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -10,17 +10,22 @@ import {
   Settings,
   Shield,
   Sun,
-  Layers,
-  FolderKanban,
 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Link, Outlet, useLocation } from "react-router-dom"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { cn } from "@/lib/utils"
-import { useTheme } from "@/hooks/useTheme"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import useAuth from "@/hooks/useAuth"
+import { useTheme } from "@/hooks/useTheme"
+import { cn } from "@/lib/utils"
 
 interface NavItem {
   icon: React.ElementType
@@ -40,7 +45,12 @@ const NAV_ITEMS: NavItem[] = [
 
 function getInitials(name?: string | null, email?: string | null) {
   if (name) {
-    return name.split(" ").map((p) => p[0]).join("").toUpperCase().slice(0, 2)
+    return name
+      .split(" ")
+      .map((p) => p[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
   }
   return (email?.[0] ?? "U").toUpperCase()
 }
@@ -66,17 +76,23 @@ export default function Layout() {
   const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className="flex flex-col h-full">
       {/* Logo / Brand */}
-      <div className={cn(
-        "flex items-center gap-3 px-4 py-4 border-b border-sidebar-border",
-        collapsed && !isMobile && "justify-center px-3",
-      )}>
+      <div
+        className={cn(
+          "flex items-center gap-3 px-4 py-4 border-b border-sidebar-border",
+          collapsed && !isMobile && "justify-center px-3",
+        )}
+      >
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm shrink-0">
           D
         </div>
         {(!collapsed || isMobile) && (
           <div>
-            <p className="text-sm font-bold tracking-tight text-sidebar-foreground">DOit</p>
-            <p className="text-xs text-muted-foreground leading-none">Assign. Track. Finish.</p>
+            <p className="text-sm font-bold tracking-tight text-sidebar-foreground">
+              DOit
+            </p>
+            <p className="text-xs text-muted-foreground leading-none">
+              Assign. Track. Finish.
+            </p>
           </div>
         )}
       </div>
@@ -91,7 +107,9 @@ export default function Layout() {
           )}
           {visibleItems.map(({ icon: Icon, label, path }) => {
             const isActive =
-              path === "/" ? location.pathname === "/" : location.pathname.startsWith(path)
+              path === "/"
+                ? location.pathname === "/"
+                : location.pathname.startsWith(path)
             const item = (
               <Link
                 key={path}
@@ -166,10 +184,12 @@ export default function Layout() {
         <Separator />
 
         {/* User */}
-        <div className={cn(
-          "flex items-center gap-2 rounded-md p-1.5",
-          collapsed && !isMobile && "justify-center",
-        )}>
+        <div
+          className={cn(
+            "flex items-center gap-2 rounded-md p-1.5",
+            collapsed && !isMobile && "justify-center",
+          )}
+        >
           <Avatar className="h-7 w-7 shrink-0">
             <AvatarImage src={user?.avatar_url ?? undefined} />
             <AvatarFallback className="text-xs">
@@ -229,7 +249,10 @@ export default function Layout() {
         >
           <ChevronLeft
             size={12}
-            className={cn("transition-transform duration-200", collapsed && "rotate-180")}
+            className={cn(
+              "transition-transform duration-200",
+              collapsed && "rotate-180",
+            )}
           />
         </Button>
       </aside>

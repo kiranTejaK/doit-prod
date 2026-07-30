@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import api from "@/api"
 
 export interface Project {
@@ -48,7 +48,11 @@ export function useCreateProject() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (data: { name: string; description?: string; workspace_id: string }) => {
+    mutationFn: async (data: {
+      name: string
+      description?: string
+      workspace_id: string
+    }) => {
       const res = await api.post("/api/v1/projects/", data)
       return res.data
     },

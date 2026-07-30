@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="doit-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#6366F1" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#4F46E5" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Outer Rounded Square Frame -->
+  <rect x="32" y="32" width="448" height="448" rx="112" fill="url(#doit-grad)" filter="url(#shadow)" />
+
+  <!-- Geometric Layer Accent -->
+  <path d="M 140 180 L 256 120 L 372 180 L 256 240 Z" fill="#FFFFFF" fill-opacity="0.25" />
+
+  <!-- Bold Checkmark Graphic -->
+  <path d="M 160 270 L 226 336 L 352 196" 
+        fill="none" 
+        stroke="#FFFFFF" 
+        stroke-width="48" 
+        stroke-linecap="round" 
+        stroke-linejoin="round" />
+</svg>

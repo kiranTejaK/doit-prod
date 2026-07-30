@@ -1,5 +1,6 @@
 import uuid
 from typing import Any
+
 from fastapi import APIRouter, BackgroundTasks
 
 from app.api.deps import CurrentUser, SessionDep
@@ -63,12 +64,12 @@ def update_task(
     background_tasks: BackgroundTasks,
 ) -> Any:
     """Update a task."""
-    return task_service.update_task(session, current_user, id, task_in, background_tasks)
+    return task_service.update_task(
+        session, current_user, id, task_in, background_tasks
+    )
 
 
 @router.delete("/{id}", response_model=Message)
-def delete_task(
-    session: SessionDep, current_user: CurrentUser, id: uuid.UUID
-) -> Any:
+def delete_task(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
     """Delete a task."""
     return task_service.delete_task(session, current_user, id)

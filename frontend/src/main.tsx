@@ -31,10 +31,10 @@ import WorkspacesPage from "./pages/WorkspacesPage"
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,      // 5 minutes — data is fresh, no background refetch
-      gcTime: 1000 * 60 * 10,        // 10 minutes — keep in cache after unmount
-      retry: 1,                       // Retry failed requests once
-      refetchOnWindowFocus: false,    // Prevent refetch on tab switch (avoids render loops)
+      staleTime: 1000 * 60 * 5, // 5 minutes — data is fresh, no background refetch
+      gcTime: 1000 * 60 * 10, // 10 minutes — keep in cache after unmount
+      retry: 1, // Retry failed requests once
+      refetchOnWindowFocus: false, // Prevent refetch on tab switch (avoids render loops)
     },
     mutations: {
       retry: 0,
@@ -45,8 +45,7 @@ const queryClient = new QueryClient({
 // ─── Theme Init — apply before first paint ────────────────────────────────────
 const savedTheme = localStorage.getItem("theme") || "system"
 const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches
-const isDark =
-  savedTheme === "dark" || (savedTheme === "system" && prefersDark)
+const isDark = savedTheme === "dark" || (savedTheme === "system" && prefersDark)
 
 if (isDark) {
   document.documentElement.classList.add("dark")

@@ -5,13 +5,15 @@ from logging.handlers import RotatingFileHandler
 import structlog
 
 from app.core.config import settings
+
 # ── Global Guard ─────────────────────────────────────────────────────────
 # Prevent duplicate handlers on re-import (common during testing)
 _CONFIGURED = False
 # ── Setup Function ─────────────────────────────────────────────────────────
 
+
 def setup_logging() -> None:
-    # 1. Initialization Guard: Prevents the setup from running multiple times 
+    # 1. Initialization Guard: Prevents the setup from running multiple times
     # if this module is imported in multiple places, avoiding duplicate log lines.
     global _CONFIGURED
     if _CONFIGURED:
@@ -29,25 +31,31 @@ def setup_logging() -> None:
     # 3. Structlog Processor Pipeline
     # These processors run in order to enrich the log event dictionary before rendering.
     processors = [
-        structlog.contextvars.merge_contextvars,      # Merges thread-local/task-local context (like correlation IDs)
-        structlog.stdlib.add_log_level,               # Adds the severity level (INFO, ERROR, etc.)
-        structlog.stdlib.add_logger_name,             # Adds the name of the module that emitted the log
+        structlog.contextvars.merge_contextvars,  # Merges thread-local/task-local context (like correlation IDs)
+        structlog.stdlib.add_log_level,  # Adds the severity level (INFO, ERROR, etc.)
+        structlog.stdlib.add_logger_name,  # Adds the name of the module that emitted the log
         structlog.processors.TimeStamper(fmt="iso"),  # Adds an ISO-8601 timestamp
-        structlog.processors.StackInfoRenderer(),     # Formats stack traces if 'stack_info=True' is passed
-        structlog.processors.format_exc_info,         # Formats exception tracebacks if 'exc_info=True' is passed
+        structlog.processors.StackInfoRenderer(),  # Formats stack traces if 'stack_info=True' is passed
+        structlog.processors.format_exc_info,  # Formats exception tracebacks if 'exc_info=True' is passed
     ]
 
     # 4. Renderer & Formatter Configuration
     # Uses JSON renderer for machine-readable production logs, or a colorful console renderer for local development.
-    renderer = structlog.processors.JSONRenderer() if settings.LOG_JSON else structlog.dev.ConsoleRenderer()
+    renderer = (
+        structlog.processors.JSONRenderer()
+        if settings.LOG_JSON
+        else structlog.dev.ConsoleRenderer()
+    )
     # The formatter bridges structlog and standard library logging, ensuring stdlib logs pass through structlog processors.
-    formatter = structlog.stdlib.ProcessorFormatter(processor=renderer, foreign_pre_chain=processors)
+    formatter = structlog.stdlib.ProcessorFormatter(
+        processor=renderer, foreign_pre_chain=processors
+    )
 
     # 5. Structlog Global Configuration
     structlog.configure(
         processors=processors + [renderer],
         context_class=dict,
-        logger_factory=structlog.stdlib.LoggerFactory(), # Tells structlog to route final output through stdlib logging
+        logger_factory=structlog.stdlib.LoggerFactory(),  # Tells structlog to route final output through stdlib logging
         wrapper_class=structlog.stdlib.BoundLogger,
         cache_logger_on_first_use=True,
     )
@@ -62,14 +70,19 @@ def setup_logging() -> None:
     # File logging (rotating log files to prevent filling up the disk)
     if settings.ENABLE_FILE_LOGGING:
         log_path = os.path.join(settings.LOG_DIR, "app.log")
-        file_handler = RotatingFileHandler(log_path, maxBytes=settings.LOG_MAX_BYTES, backupCount=settings.LOG_BACKUP_COUNT)
+        file_handler = RotatingFileHandler(
+            log_path,
+            maxBytes=settings.LOG_MAX_BYTES,
+            backupCount=settings.LOG_BACKUP_COUNT,
+        )
         file_handler.setFormatter(formatter)
         file_handler.setLevel(root_logger.level)
         root_logger.addHandler(file_handler)
     # Fallback to prevent "No handlers could be found" warnings if both are disabled
     if not root_logger.handlers:
         root_logger.addHandler(logging.NullHandler())
-        
+
+
 setup_logging()
 logger = structlog.get_logger()
 

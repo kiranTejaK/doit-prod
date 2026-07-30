@@ -7,6 +7,7 @@ from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+
 def get_s3_client():
     if not settings.S3_BUCKET:
         return None
@@ -16,6 +17,7 @@ def get_s3_client():
         aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
         region_name=settings.AWS_REGION,
     )
+
 
 def upload_file_to_s3(file_obj, key: str, content_type: str = None) -> bool:
     s3_client = get_s3_client()
@@ -28,11 +30,14 @@ def upload_file_to_s3(file_obj, key: str, content_type: str = None) -> bool:
         if content_type:
             extra_args["ContentType"] = content_type
 
-        s3_client.upload_fileobj(file_obj, settings.S3_BUCKET, key, ExtraArgs=extra_args)
+        s3_client.upload_fileobj(
+            file_obj, settings.S3_BUCKET, key, ExtraArgs=extra_args
+        )
         return True
     except ClientError as e:
         logger.error(f"Error uploading to S3: {e}")
         return False
+
 
 def get_presigned_url(key: str, expiration: int = 3600) -> str | None:
     s3_client = get_s3_client()
@@ -49,6 +54,7 @@ def get_presigned_url(key: str, expiration: int = 3600) -> str | None:
     except ClientError as e:
         logger.error(f"Error generating presigned URL: {e}")
         return None
+
 
 def delete_file_from_s3(key: str) -> bool:
     s3_client = get_s3_client()

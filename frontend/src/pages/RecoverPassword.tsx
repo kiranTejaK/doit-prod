@@ -1,6 +1,6 @@
+import { ArrowLeft, Loader2, Mail } from "lucide-react"
 import { useState } from "react"
 import { Link } from "react-router-dom"
-import { ArrowLeft, Loader2, Mail } from "lucide-react"
 import api from "@/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,7 +19,8 @@ export default function RecoverPassword() {
       await api.post(`/api/v1/password-recovery/${email}`)
       toast({
         title: "Recovery email sent",
-        description: "A password recovery link has been sent to your email address.",
+        description:
+          "A password recovery link has been sent to your email address.",
         variant: "success",
       })
       setEmail("")
@@ -37,7 +38,6 @@ export default function RecoverPassword() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
-
         {/* Brand */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary text-primary-foreground font-bold text-lg mb-4">
@@ -67,11 +67,7 @@ export default function RecoverPassword() {
               />
             </div>
 
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={submitting}
-            >
+            <Button type="submit" className="w-full" disabled={submitting}>
               {submitting ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
@@ -89,7 +85,10 @@ export default function RecoverPassword() {
 
         {/* Footer */}
         <p className="text-center text-sm text-muted-foreground mt-6">
-          <Link to="/login" className="inline-flex items-center gap-1 text-primary font-medium hover:underline">
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-1 text-primary font-medium hover:underline"
+          >
             <ArrowLeft size={14} />
             Back to Sign In
           </Link>

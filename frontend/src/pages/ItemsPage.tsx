@@ -1,5 +1,3 @@
-import { useState } from "react"
-import { useSearchParams } from "react-router-dom"
 import {
   ChevronLeft,
   ChevronRight,
@@ -9,6 +7,8 @@ import {
   Plus,
   Trash2,
 } from "lucide-react"
+import { useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -22,13 +22,13 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useToast } from "@/hooks/use-toast"
 import {
   useCreateItem,
   useDeleteItem,
   useItems,
   useUpdateItem,
 } from "@/hooks/useItems"
-import { useToast } from "@/hooks/use-toast"
 
 const PER_PAGE = 5
 
@@ -160,11 +160,16 @@ export default function ItemsPage() {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
               <Package size={24} />
             </div>
-            <h3 className="text-lg font-medium text-foreground">No items found</h3>
+            <h3 className="text-lg font-medium text-foreground">
+              No items found
+            </h3>
             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
               Create an item to keep track of your custom resources.
             </p>
-            <Button onClick={() => setShowAddModal(true)} className="gap-2 mt-2">
+            <Button
+              onClick={() => setShowAddModal(true)}
+              className="gap-2 mt-2"
+            >
               <Plus size={16} /> Add Item
             </Button>
           </CardContent>
@@ -184,7 +189,10 @@ export default function ItemsPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {items.map((item) => (
-                    <tr key={item.id} className="hover:bg-accent/40 transition-colors">
+                    <tr
+                      key={item.id}
+                      className="hover:bg-accent/40 transition-colors"
+                    >
                       <td className="px-4 py-3.5 font-mono text-xs text-muted-foreground">
                         {item.id.slice(0, 8)}...
                       </td>
@@ -282,7 +290,11 @@ export default function ItemsPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowAddModal(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAddModal(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={createItem.isPending}>
@@ -300,12 +312,17 @@ export default function ItemsPage() {
       </Dialog>
 
       {/* Edit Item Modal */}
-      <Dialog open={Boolean(editItem)} onOpenChange={(open) => !open && setEditItem(null)}>
+      <Dialog
+        open={Boolean(editItem)}
+        onOpenChange={(open) => !open && setEditItem(null)}
+      >
         <DialogContent>
           <form onSubmit={handleEdit}>
             <DialogHeader>
               <DialogTitle>Edit Item</DialogTitle>
-              <DialogDescription>Update details for this item.</DialogDescription>
+              <DialogDescription>
+                Update details for this item.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-1.5">
@@ -327,7 +344,11 @@ export default function ItemsPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditItem(null)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditItem(null)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={updateItem.isPending}>

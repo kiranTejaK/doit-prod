@@ -27,7 +27,9 @@ api_router.include_router(sections.router, tags=["sections"])
 api_router.include_router(tasks.router, tags=["tasks"])
 api_router.include_router(comments.router, tags=["comments"])
 api_router.include_router(attachments.router, tags=["attachments"])
-api_router.include_router(invitations.router, prefix="/invitations", tags=["invitations"])
+api_router.include_router(
+    invitations.router, prefix="/invitations", tags=["invitations"]
+)
 
 
 if settings.ENVIRONMENT == "local":

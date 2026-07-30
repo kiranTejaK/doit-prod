@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom"
 import {
   ArrowRight,
   Briefcase,
@@ -6,12 +5,13 @@ import {
   Clock,
   ListTodo,
 } from "lucide-react"
+import { Link } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import useAuth from "@/hooks/useAuth"
-import { Project, useProjects } from "@/hooks/useProjects"
+import { type Project, useProjects } from "@/hooks/useProjects"
 import { useTasks } from "@/hooks/useTasks"
 
 export default function Dashboard() {
@@ -29,9 +29,7 @@ export default function Dashboard() {
   const completedTasks = tasks.filter((t) => t.status === "done").length
   const pendingTasks = totalTasks - completedTasks
   const recentProjects = projects.slice(0, 4)
-  const upcomingTasks = tasks
-    .filter((t) => t.status !== "done")
-    .slice(0, 5)
+  const upcomingTasks = tasks.filter((t) => t.status !== "done").slice(0, 5)
 
   if (isLoading) {
     return (
@@ -104,12 +102,18 @@ export default function Dashboard() {
         {statCards.map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="transition-all hover:shadow-md">
             <CardContent className="p-5 flex items-center gap-4">
-              <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${color}`}>
+              <div
+                className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${color}`}
+              >
                 <Icon size={22} />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-medium text-muted-foreground truncate">{label}</p>
-                <h3 className="text-2xl font-bold tracking-tight text-foreground">{value}</h3>
+                <p className="text-xs font-medium text-muted-foreground truncate">
+                  {label}
+                </p>
+                <h3 className="text-2xl font-bold tracking-tight text-foreground">
+                  {value}
+                </h3>
               </div>
             </CardContent>
           </Card>
@@ -120,8 +124,15 @@ export default function Dashboard() {
         {/* Recent Projects */}
         <Card className="flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-base font-semibold">Recent Projects</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs gap-1 text-primary" asChild>
+            <CardTitle className="text-base font-semibold">
+              Recent Projects
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs gap-1 text-primary"
+              asChild
+            >
               <Link to="/projects">
                 View All <ArrowRight size={12} />
               </Link>
@@ -139,7 +150,9 @@ export default function Dashboard() {
                   className="flex items-center justify-between p-3 rounded-lg border border-border bg-background hover:bg-accent/50 transition-colors"
                 >
                   <div className="min-w-0 pr-2">
-                    <p className="text-sm font-medium truncate text-foreground">{project.name}</p>
+                    <p className="text-sm font-medium truncate text-foreground">
+                      {project.name}
+                    </p>
                     {project.workspace_name && (
                       <p className="text-xs text-muted-foreground truncate">
                         {project.workspace_name}
@@ -158,8 +171,15 @@ export default function Dashboard() {
         {/* Upcoming Tasks */}
         <Card className="flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-            <CardTitle className="text-base font-semibold">Upcoming Tasks</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs gap-1 text-primary" asChild>
+            <CardTitle className="text-base font-semibold">
+              Upcoming Tasks
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs gap-1 text-primary"
+              asChild
+            >
               <Link to="/tasks">
                 View All <ArrowRight size={12} />
               </Link>
@@ -177,10 +197,16 @@ export default function Dashboard() {
                   className="flex items-center justify-between p-3 rounded-lg border border-border bg-background hover:bg-accent/50 transition-colors"
                 >
                   <div className="min-w-0 pr-2 flex-1">
-                    <p className="text-sm font-medium truncate text-foreground">{task.title}</p>
+                    <p className="text-sm font-medium truncate text-foreground">
+                      {task.title}
+                    </p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <Badge
-                        variant={task.priority === "high" || task.priority === "urgent" ? "destructive" : "secondary"}
+                        variant={
+                          task.priority === "high" || task.priority === "urgent"
+                            ? "destructive"
+                            : "secondary"
+                        }
                         className="text-[10px] px-1.5 py-0"
                       >
                         {task.priority}

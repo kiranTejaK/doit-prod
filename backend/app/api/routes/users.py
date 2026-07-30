@@ -156,14 +156,16 @@ def register_user(session: SessionDep, user_in: UserRegister) -> Any:
             detail="The user with this email already exists in the system",
         )
     user_create = UserCreate.model_validate(user_in)
-    user_create.is_active = False # Disable account until verification
+    user_create.is_active = False  # Disable account until verification
     user = crud.create_user(session=session, user_create=user_create)
 
     # Send verification email
     if settings.emails_enabled and user_in.email:
         verification_token = generate_verification_token(email=user_in.email)
         email_data = generate_account_verification_email(
-            email_to=user.email, username=user.full_name or user.email, token=verification_token
+            email_to=user.email,
+            username=user.full_name or user.email,
+            token=verification_token,
         )
         send_email(
             email_to=user.email,
@@ -186,8 +188,8 @@ def read_user_by_id(
             status_code=403, detail="The user doesn't have enough privileges"
         )
     user = session.get(User, user_id)
-    if not user: # Handle user not found case properly too
-         raise HTTPException(status_code=404, detail="User not found")
+    if not user:  # Handle user not found case properly too
+        raise HTTPException(status_code=404, detail="User not found")
 
     # Allow any authenticated user to read public user info (needed for task assignees)
     # The response_model=UserPublic filters out sensitive data like hashed_password

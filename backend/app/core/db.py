@@ -21,9 +21,11 @@ def init_db(session: Session) -> None:
     # from app.models import Base
     # Base.metadata.create_all(engine)
 
-    user = session.execute(
-        select(User).where(User.email == settings.FIRST_SUPERUSER)
-    ).scalars().first()
+    user = (
+        session.execute(select(User).where(User.email == settings.FIRST_SUPERUSER))
+        .scalars()
+        .first()
+    )
     if not user:
         user_in = UserCreate(
             email=settings.FIRST_SUPERUSER,

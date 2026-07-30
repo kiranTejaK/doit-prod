@@ -9,17 +9,24 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 class Base(DeclarativeBase):
     pass
 
+
 class WorkspaceMember(Base):
     __tablename__ = "workspacemember"
-    workspace_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("workspace.id"), primary_key=True)
+    workspace_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("workspace.id"), primary_key=True
+    )
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id"), primary_key=True)
     role: Mapped[str] = mapped_column(String, default="member")
 
+
 class ProjectMember(Base):
     __tablename__ = "projectmember"
-    project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("project.id"), primary_key=True)
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("project.id"), primary_key=True
+    )
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id"), primary_key=True)
     role: Mapped[str] = mapped_column(String, default="viewer")
+
 
 class User(Base):
     __tablename__ = "user"
@@ -32,18 +39,28 @@ class User(Base):
     job_title: Mapped[str | None] = mapped_column(String(255), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
-    items: Mapped[list["Item"]] = relationship(back_populates="owner", cascade="all, delete-orphan")
-    workspaces: Mapped[list["Workspace"]] = relationship(secondary="workspacemember", back_populates="members")
-    projects: Mapped[list["Project"]] = relationship(secondary="projectmember", back_populates="members")
+    items: Mapped[list["Item"]] = relationship(
+        back_populates="owner", cascade="all, delete-orphan"
+    )
+    workspaces: Mapped[list["Workspace"]] = relationship(
+        secondary="workspacemember", back_populates="members"
+    )
+    projects: Mapped[list["Project"]] = relationship(
+        secondary="projectmember", back_populates="members"
+    )
+
 
 class Item(Base):
     __tablename__ = "item"
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(String(255))
     description: Mapped[str | None] = mapped_column(String(255), nullable=True)
-    owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id", ondelete="CASCADE"))
+    owner_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user.id", ondelete="CASCADE")
+    )
 
     owner: Mapped[Optional["User"]] = relationship(back_populates="items")
+
 
 class Workspace(Base):
     __tablename__ = "workspace"
@@ -52,8 +69,13 @@ class Workspace(Base):
     description: Mapped[str | None] = mapped_column(String(255), nullable=True)
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id"))
 
-    members: Mapped[list["User"]] = relationship(secondary="workspacemember", back_populates="workspaces")
-    projects: Mapped[list["Project"]] = relationship(back_populates="workspace", cascade="all, delete-orphan")
+    members: Mapped[list["User"]] = relationship(
+        secondary="workspacemember", back_populates="workspaces"
+    )
+    projects: Mapped[list["Project"]] = relationship(
+        back_populates="workspace", cascade="all, delete-orphan"
+    )
+
 
 class Project(Base):
     __tablename__ = "project"
@@ -67,9 +89,16 @@ class Project(Base):
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id"))
 
     workspace: Mapped["Workspace"] = relationship(back_populates="projects")
-    members: Mapped[list["User"]] = relationship(secondary="projectmember", back_populates="projects")
-    tasks: Mapped[list["Task"]] = relationship(back_populates="project", cascade="all, delete-orphan")
-    sections: Mapped[list["Section"]] = relationship(back_populates="project", cascade="all, delete-orphan")
+    members: Mapped[list["User"]] = relationship(
+        secondary="projectmember", back_populates="projects"
+    )
+    tasks: Mapped[list["Task"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
+    )
+    sections: Mapped[list["Section"]] = relationship(
+        back_populates="project", cascade="all, delete-orphan"
+    )
+
 
 class Section(Base):
     __tablename__ = "section"
@@ -81,6 +110,7 @@ class Section(Base):
     project: Mapped["Project"] = relationship(back_populates="sections")
     tasks: Mapped[list["Task"]] = relationship(back_populates="section")
 
+
 class Task(Base):
     __tablename__ = "task"
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
@@ -91,15 +121,26 @@ class Task(Base):
     due_date: Mapped[str | None] = mapped_column(String, nullable=True)
 
     project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("project.id"))
-    section_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("section.id"), nullable=True)
+    section_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("section.id"), nullable=True
+    )
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id"))
-    assignee_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("user.id"), nullable=True)
+    assignee_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("user.id"), nullable=True
+    )
 
     project: Mapped["Project"] = relationship(back_populates="tasks")
     section: Mapped[Optional["Section"]] = relationship(back_populates="tasks")
-    comments: Mapped[list["Comment"]] = relationship(back_populates="task", cascade="all, delete-orphan")
-    activity_logs: Mapped[list["ActivityLog"]] = relationship(back_populates="task", cascade="all, delete-orphan")
-    attachments: Mapped[list["Attachment"]] = relationship(back_populates="task", cascade="all, delete-orphan")
+    comments: Mapped[list["Comment"]] = relationship(
+        back_populates="task", cascade="all, delete-orphan"
+    )
+    activity_logs: Mapped[list["ActivityLog"]] = relationship(
+        back_populates="task", cascade="all, delete-orphan"
+    )
+    attachments: Mapped[list["Attachment"]] = relationship(
+        back_populates="task", cascade="all, delete-orphan"
+    )
+
 
 class Comment(Base):
     __tablename__ = "comment"
@@ -110,7 +151,10 @@ class Comment(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     task: Mapped["Task"] = relationship(back_populates="comments")
-    attachments: Mapped[list["Attachment"]] = relationship(back_populates="comment", cascade="all, delete-orphan")
+    attachments: Mapped[list["Attachment"]] = relationship(
+        back_populates="comment", cascade="all, delete-orphan"
+    )
+
 
 class ActivityLog(Base):
     __tablename__ = "activitylog"
@@ -123,6 +167,7 @@ class ActivityLog(Base):
 
     task: Mapped["Task"] = relationship(back_populates="activity_logs")
 
+
 class Attachment(Base):
     __tablename__ = "attachment"
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
@@ -132,12 +177,15 @@ class Attachment(Base):
     file_size: Mapped[int] = mapped_column(Integer)
 
     task_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("task.id"))
-    comment_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("comment.id"), nullable=True)
+    comment_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("comment.id"), nullable=True
+    )
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("user.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     task: Mapped["Task"] = relationship(back_populates="attachments")
     comment: Mapped[Optional["Comment"]] = relationship(back_populates="attachments")
+
 
 class Invitation(Base):
     __tablename__ = "invitation"

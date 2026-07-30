@@ -40,6 +40,7 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
             detail="Could not validate credentials",
         )
     import uuid
+
     try:
         user_id = uuid.UUID(token_data.sub)
     except ValueError:

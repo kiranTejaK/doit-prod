@@ -61,16 +61,20 @@ def send_email(
     # NEW IMPLEMENTATION USING SMTPLIB
     try:
         logger.info(f"Preparing to send email to {email_to}")
-        logger.info(f"SMTP Config: Host={settings.SMTP_HOST}, Port={settings.SMTP_PORT}, TLS={settings.SMTP_TLS}, User={settings.SMTP_USER}")
+        logger.info(
+            f"SMTP Config: Host={settings.SMTP_HOST}, Port={settings.SMTP_PORT}, TLS={settings.SMTP_TLS}, User={settings.SMTP_USER}"
+        )
 
         msg = MIMEMultipart()
-        msg['From'] = f"{settings.EMAILS_FROM_NAME} <{settings.EMAILS_FROM_EMAIL}>"
-        msg['To'] = email_to
-        msg['Subject'] = subject
-        msg.attach(MIMEText(html_content, 'html'))
+        msg["From"] = f"{settings.EMAILS_FROM_NAME} <{settings.EMAILS_FROM_EMAIL}>"
+        msg["To"] = email_to
+        msg["Subject"] = subject
+        msg.attach(MIMEText(html_content, "html"))
 
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT) as server:
-            server.set_debuglevel(1) # Enable verbose SMTP logging (will show in docker logs)
+            server.set_debuglevel(
+                1
+            )  # Enable verbose SMTP logging (will show in docker logs)
             logger.info("Connected to SMTP server")
             server.ehlo()
 
@@ -91,6 +95,7 @@ def send_email(
     except Exception as e:
         logger.error(f"Failed to send email: {e}")
         import traceback
+
         logger.error(traceback.format_exc())
 
 
@@ -140,7 +145,11 @@ def generate_new_account_email(
 
 
 def generate_task_assignment_email(
-    email_to: str, task_title: str, project_name: str, workspace_name: str, assignee_name: str
+    email_to: str,
+    task_title: str,
+    project_name: str,
+    workspace_name: str,
+    assignee_name: str,
 ) -> EmailData:
     subject = f"[{project_name}] You have been assigned to: {task_title}"
     context = {
@@ -206,7 +215,9 @@ def verify_verification_token(token: str) -> str | None:
         return None
 
 
-def generate_account_verification_email(email_to: str, username: str, token: str) -> EmailData:
+def generate_account_verification_email(
+    email_to: str, username: str, token: str
+) -> EmailData:
     project_name = settings.PROJECT_NAME
     subject = f"{project_name} - Verify your account"
     link = f"{settings.FRONTEND_HOST}/verify-email?token={token}"
@@ -222,6 +233,7 @@ def generate_account_verification_email(email_to: str, username: str, token: str
         },
     )
     return EmailData(html_content=html_content, subject=subject)
+
 
 def generate_workspace_invitation_email(
     workspace_name: str,
@@ -247,18 +259,16 @@ def generate_workspace_invitation_email(
 
 
 def run_with_retries(
-    func: Any,
-    *args: Any,
-    max_retries: int = 3,
-    base_delay: float = 2.0,
-    **kwargs: Any
+    func: Any, *args: Any, max_retries: int = 3, base_delay: float = 2.0, **kwargs: Any
 ) -> Any:
     """
     Executes a function with retries and exponential backoff.
     Designed for use inside FastAPI BackgroundTasks.
     """
     import time
+
     import structlog
+
     struct_logger = structlog.get_logger(__name__)
 
     attempt = 0
@@ -288,4 +298,3 @@ def run_with_retries(
                 error=str(exc),
             )
             time.sleep(delay)
-

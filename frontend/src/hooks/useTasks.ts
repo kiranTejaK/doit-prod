@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import api from "@/api"
 
 export interface Task {
@@ -36,7 +36,11 @@ export interface TaskUpdatePayload {
   due_date?: string
 }
 
-export function useTasks(params?: { assignee_id?: string; project_id?: string; limit?: number }) {
+export function useTasks(params?: {
+  assignee_id?: string
+  project_id?: string
+  limit?: number
+}) {
   const { assignee_id, project_id, limit = 100 } = params || {}
 
   return useQuery({
@@ -67,7 +71,9 @@ export function useCreateTask() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] })
       if (data.project_id) {
-        queryClient.invalidateQueries({ queryKey: ["project", data.project_id] })
+        queryClient.invalidateQueries({
+          queryKey: ["project", data.project_id],
+        })
       }
     },
   })
@@ -77,14 +83,22 @@ export function useUpdateTask() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ taskId, payload }: { taskId: string; payload: TaskUpdatePayload }) => {
+    mutationFn: async ({
+      taskId,
+      payload,
+    }: {
+      taskId: string
+      payload: TaskUpdatePayload
+    }) => {
       const res = await api.put(`/api/v1/tasks/${taskId}`, payload)
       return res.data as Task
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["tasks"] })
       if (data.project_id) {
-        queryClient.invalidateQueries({ queryKey: ["project", data.project_id] })
+        queryClient.invalidateQueries({
+          queryKey: ["project", data.project_id],
+        })
       }
     },
   })

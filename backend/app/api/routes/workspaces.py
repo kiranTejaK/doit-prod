@@ -48,10 +48,10 @@ def read_workspaces(
         # Note: Count might be complex with join, doing simple count for now
         # Actually count only matches
         count_statement = (
-             select(func.count())
-             .select_from(Workspace)
-             .join(WorkspaceMember, Workspace.id == WorkspaceMember.workspace_id)
-             .where(WorkspaceMember.user_id == current_user.id)
+            select(func.count())
+            .select_from(Workspace)
+            .join(WorkspaceMember, Workspace.id == WorkspaceMember.workspace_id)
+            .where(WorkspaceMember.user_id == current_user.id)
         )
         count = session.execute(count_statement).scalar_one()
         workspaces = session.execute(statement).scalars().all()
@@ -60,7 +60,9 @@ def read_workspaces(
 
 
 @router.get("/{id}", response_model=WorkspacePublic)
-def read_workspace(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
+def read_workspace(
+    session: SessionDep, current_user: CurrentUser, id: uuid.UUID
+) -> Any:
     """
     Get workspace by ID.
     """
@@ -72,10 +74,9 @@ def read_workspace(session: SessionDep, current_user: CurrentUser, id: uuid.UUID
         # Check membership
         member = session.get(WorkspaceMember, (id, current_user.id))
         if not member:
-             raise HTTPException(status_code=403, detail="Not enough permissions")
+            raise HTTPException(status_code=403, detail="Not enough permissions")
 
     return workspace
-
 
 
 @router.post("/", response_model=WorkspacePublic)
@@ -85,13 +86,15 @@ def create_workspace(
     """
     Create new workspace.
     """
-    workspace = Workspace(**workspace_in.model_dump(), owner_id= current_user.id)
+    workspace = Workspace(**workspace_in.model_dump(), owner_id=current_user.id)
     session.add(workspace)
     session.commit()
     session.refresh(workspace)
 
     # Add creator as member (owner relation is separate, but usually creator is also a member)
-    member = WorkspaceMember(workspace_id=workspace.id, user_id=current_user.id, role="owner")
+    member = WorkspaceMember(
+        workspace_id=workspace.id, user_id=current_user.id, role="owner"
+    )
     session.add(member)
     session.commit()
 
@@ -115,8 +118,8 @@ def update_workspace(
 
     if not current_user.is_superuser:
         if workspace.owner_id != current_user.id:
-             # Or check if admin role in member?
-             raise HTTPException(status_code=400, detail="Not enough permissions")
+            # Or check if admin role in member?
+            raise HTTPException(status_code=400, detail="Not enough permissions")
 
     update_dict = workspace_in.model_dump(exclude_unset=True)
     for key, value in update_dict.items():
@@ -139,7 +142,7 @@ def delete_workspace(
         raise HTTPException(status_code=404, detail="Workspace not found")
 
     if not current_user.is_superuser:
-         if workspace.owner_id != current_user.id:
+        if workspace.owner_id != current_user.id:
             raise HTTPException(status_code=400, detail="Not enough permissions")
 
     session.delete(workspace)
@@ -149,7 +152,11 @@ def delete_workspace(
 
 @router.get("/{id}/members", response_model=WorkspaceMembersPublic)
 def read_workspace_members(
-    session: SessionDep, current_user: CurrentUser, id: uuid.UUID, skip: int = 0, limit: int = 100
+    session: SessionDep,
+    current_user: CurrentUser,
+    id: uuid.UUID,
+    skip: int = 0,
+    limit: int = 100,
 ) -> Any:
     """
     Retrieve members of a workspace with roles.
@@ -162,7 +169,7 @@ def read_workspace_members(
     if not current_user.is_superuser:
         member = session.get(WorkspaceMember, (id, current_user.id))
         if not member:
-             raise HTTPException(status_code=403, detail="Not enough permissions")
+            raise HTTPException(status_code=403, detail="Not enough permissions")
 
     from app.models import User  # Import inside to avoid circular deps if any
 
@@ -183,7 +190,6 @@ def read_workspace_members(
         .limit(limit)
     )
     results = session.execute(statement).all()
-
 
     # Transform to WorkspaceMemberPublic
     members_data = []
@@ -253,9 +259,7 @@ def remove_workspace_member(
         )
 
     if user_id == workspace.owner_id:
-        raise HTTPException(
-            status_code=400, detail="Workspace owner cannot be removed"
-        )
+        raise HTTPException(status_code=400, detail="Workspace owner cannot be removed")
 
     member = session.get(WorkspaceMember, (id, user_id))
     if not member:
@@ -264,4 +268,3 @@ def remove_workspace_member(
     session.delete(member)
     session.commit()
     return Message(message="Workspace member removed successfully")
-

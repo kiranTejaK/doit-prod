@@ -1,11 +1,14 @@
 import uuid
+
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from app.models import Project, ProjectMember, User, Workspace, WorkspaceMember
+from app.models import Project, ProjectMember, User, WorkspaceMember
 
 
-def verify_workspace_membership(session: Session, workspace_id: uuid.UUID, user: User) -> WorkspaceMember:
+def verify_workspace_membership(
+    session: Session, workspace_id: uuid.UUID, user: User
+) -> WorkspaceMember:
     """Ensure user is a member of the workspace or a superuser."""
     if user.is_superuser:
         return WorkspaceMember(workspace_id=workspace_id, user_id=user.id, role="admin")
@@ -25,10 +28,7 @@ def get_project_or_404(session: Session, project_id: uuid.UUID) -> Project:
 
 
 def verify_project_access(
-    session: Session,
-    project_id: uuid.UUID,
-    user: User,
-    require_owner: bool = False
+    session: Session, project_id: uuid.UUID, user: User, require_owner: bool = False
 ) -> Project:
     """
     Verify user access to a project.
@@ -54,7 +54,5 @@ def verify_project_access(
         return project
 
     raise HTTPException(
-        status_code=403,
-        detail="Access denied. You are not a member of this project."
+        status_code=403, detail="Access denied. You are not a member of this project."
     )
-

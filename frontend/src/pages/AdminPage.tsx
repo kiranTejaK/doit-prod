@@ -1,5 +1,3 @@
-import { useState } from "react"
-import { useSearchParams } from "react-router-dom"
 import {
   ChevronLeft,
   ChevronRight,
@@ -9,6 +7,8 @@ import {
   Trash2,
   UserPlus,
 } from "lucide-react"
+import { useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -22,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useToast } from "@/hooks/use-toast"
 import useAuth from "@/hooks/useAuth"
 import {
   useCreateUser,
@@ -29,7 +30,6 @@ import {
   useUpdateUser,
   useUsers,
 } from "@/hooks/useUsers"
-import { useToast } from "@/hooks/use-toast"
 
 const PER_PAGE = 5
 
@@ -181,7 +181,10 @@ export default function AdminPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {users.map((u) => (
-                    <tr key={u.id} className="hover:bg-accent/40 transition-colors">
+                    <tr
+                      key={u.id}
+                      className="hover:bg-accent/40 transition-colors"
+                    >
                       <td className="px-4 py-3.5 font-medium text-foreground">
                         <div className="flex items-center gap-2">
                           <span>{u.full_name || "N/A"}</span>
@@ -192,7 +195,9 @@ export default function AdminPage() {
                           )}
                         </div>
                       </td>
-                      <td className="px-4 py-3.5 text-muted-foreground">{u.email}</td>
+                      <td className="px-4 py-3.5 text-muted-foreground">
+                        {u.email}
+                      </td>
                       <td className="px-4 py-3.5">
                         <Badge
                           variant={u.is_superuser ? "default" : "secondary"}
@@ -326,7 +331,11 @@ export default function AdminPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowAddModal(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAddModal(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={createUser.isPending}>
@@ -344,7 +353,10 @@ export default function AdminPage() {
       </Dialog>
 
       {/* Edit User Modal */}
-      <Dialog open={Boolean(editUser)} onOpenChange={(open) => !open && setEditUser(null)}>
+      <Dialog
+        open={Boolean(editUser)}
+        onOpenChange={(open) => !open && setEditUser(null)}
+      >
         <DialogContent>
           <form onSubmit={handleEditUser}>
             <DialogHeader>
@@ -386,7 +398,11 @@ export default function AdminPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setEditUser(null)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEditUser(null)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={updateUser.isPending}>

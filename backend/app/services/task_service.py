@@ -1,20 +1,19 @@
 import uuid
-from typing import Any
+
 from fastapi import BackgroundTasks, HTTPException
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 
 from app.models import Project, ProjectMember, Task, User, Workspace
 from app.schemas import (
     Message,
     TaskCreate,
-    TaskPublic,
     TaskPublicWithProject,
     TasksPublicWithProject,
     TaskUpdate,
 )
-from app.services.auth_policy import get_project_or_404, verify_project_access
-from app.utils import generate_task_assignment_email, send_email, run_with_retries
+from app.services.auth_policy import verify_project_access
+from app.utils import generate_task_assignment_email, run_with_retries, send_email
 
 
 def get_tasks(
@@ -43,15 +42,21 @@ def get_tasks(
     else:
         if project_id:
             verify_project_access(session, project_id, current_user)
-            statement = select(Task, Project).join(Project, Task.project_id == Project.id).where(Task.project_id == project_id)
+            statement = (
+                select(Task, Project)
+                .join(Project, Task.project_id == Project.id)
+                .where(Task.project_id == project_id)
+            )
         else:
             statement = (
                 select(Task, Project)
                 .join(Project, Task.project_id == Project.id)
-                .join(ProjectMember, Project.id == ProjectMember.project_id, isouter=True)
+                .join(
+                    ProjectMember, Project.id == ProjectMember.project_id, isouter=True
+                )
                 .where(
-                    (Project.owner_id == current_user.id) |
-                    (ProjectMember.user_id == current_user.id)
+                    (Project.owner_id == current_user.id)
+                    | (ProjectMember.user_id == current_user.id)
                 )
                 .distinct()
             )
@@ -128,11 +133,15 @@ def create_task(
     project = verify_project_access(session, task_in.project_id, current_user)
 
     if not task_in.assignee_id:
-        raise HTTPException(status_code=400, detail="An assignee is required for all tasks")
+        raise HTTPException(
+            status_code=400, detail="An assignee is required for all tasks"
+        )
 
     pm = session.get(ProjectMember, (task_in.project_id, task_in.assignee_id))
     if not pm and project.owner_id != task_in.assignee_id:
-        raise HTTPException(status_code=400, detail="Assignee is not a member of this project")
+        raise HTTPException(
+            status_code=400, detail="Assignee is not a member of this project"
+        )
 
     task = Task(**task_in.model_dump(), owner_id=current_user.id)
 
@@ -143,7 +152,6 @@ def create_task(
     _queue_assignment_email(background_tasks, session, task, project)
 
     return task
-
 
 
 def update_task(
@@ -169,7 +177,9 @@ def update_task(
     if task.assignee_id and task.assignee_id != old_assignee_id:
         pm = session.get(ProjectMember, (task.project_id, task.assignee_id))
         if not pm and project.owner_id != task.assignee_id:
-            raise HTTPException(status_code=400, detail="Assignee is not a member of this project")
+            raise HTTPException(
+                status_code=400, detail="Assignee is not a member of this project"
+            )
 
     session.add(task)
     session.commit()
@@ -188,7 +198,9 @@ def delete_task(session: Session, current_user: User, task_id: uuid.UUID) -> Mes
         raise HTTPException(status_code=404, detail="Task not found")
 
     if not current_user.is_superuser and task.owner_id != current_user.id:
-        verify_project_access(session, task.project_id, current_user, require_owner=True)
+        verify_project_access(
+            session, task.project_id, current_user, require_owner=True
+        )
 
     session.delete(task)
     session.commit()

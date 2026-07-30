@@ -1,6 +1,13 @@
+import {
+  ChevronLeft,
+  ChevronRight,
+  Layers,
+  Loader2,
+  Plus,
+  UserPlus,
+} from "lucide-react"
 import { useState } from "react"
 import { Link, useSearchParams } from "react-router-dom"
-import { ChevronLeft, ChevronRight, Layers, Loader2, Plus, UserPlus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -14,8 +21,12 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useCreateWorkspace, useInviteMember, useWorkspaces } from "@/hooks/useWorkspaces"
 import { useToast } from "@/hooks/use-toast"
+import {
+  useCreateWorkspace,
+  useInviteMember,
+  useWorkspaces,
+} from "@/hooks/useWorkspaces"
 
 const PER_PAGE = 5
 
@@ -67,7 +78,10 @@ export default function WorkspacesPage() {
     e.preventDefault()
     if (!inviteWsId) return
     try {
-      await inviteMember.mutateAsync({ email: inviteEmail, workspace_id: inviteWsId })
+      await inviteMember.mutateAsync({
+        email: inviteEmail,
+        workspace_id: inviteWsId,
+      })
       toast({
         title: "Invitation sent",
         description: `Invitation sent to ${inviteEmail}.`,
@@ -118,9 +132,12 @@ export default function WorkspacesPage() {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
               <Layers size={24} />
             </div>
-            <h3 className="text-lg font-medium text-foreground">No workspaces yet</h3>
+            <h3 className="text-lg font-medium text-foreground">
+              No workspaces yet
+            </h3>
             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-              Create a workspace to organize your projects and invite team members.
+              Create a workspace to organize your projects and invite team
+              members.
             </p>
             <Button onClick={() => setShowAdd(true)} className="gap-2 mt-2">
               <Plus size={16} /> Create Workspace
@@ -142,7 +159,10 @@ export default function WorkspacesPage() {
                 </thead>
                 <tbody className="divide-y divide-border">
                   {workspaces.map((ws) => (
-                    <tr key={ws.id} className="hover:bg-accent/40 transition-colors">
+                    <tr
+                      key={ws.id}
+                      className="hover:bg-accent/40 transition-colors"
+                    >
                       <td className="px-4 py-3.5 font-semibold text-foreground">
                         <Link
                           to={`/workspaces/${ws.id}`}
@@ -236,7 +256,11 @@ export default function WorkspacesPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowAdd(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAdd(false)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={createWorkspace.isPending}>
@@ -254,7 +278,10 @@ export default function WorkspacesPage() {
       </Dialog>
 
       {/* Invite Modal */}
-      <Dialog open={Boolean(inviteWsId)} onOpenChange={(open) => !open && setInviteWsId(null)}>
+      <Dialog
+        open={Boolean(inviteWsId)}
+        onOpenChange={(open) => !open && setInviteWsId(null)}
+      >
         <DialogContent>
           <form onSubmit={handleInvite}>
             <DialogHeader>
@@ -277,7 +304,11 @@ export default function WorkspacesPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setInviteWsId(null)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setInviteWsId(null)}
+              >
                 Cancel
               </Button>
               <Button type="submit" disabled={inviteMember.isPending}>

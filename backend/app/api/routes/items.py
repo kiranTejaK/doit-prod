@@ -62,7 +62,7 @@ def create_item(
     """
     Create new item.
     """
-    item = Item(**item_in.model_dump(), owner_id= current_user.id)
+    item = Item(**item_in.model_dump(), owner_id=current_user.id)
     session.add(item)
     session.commit()
     session.refresh(item)

@@ -1,4 +1,3 @@
-import { useState, useMemo } from "react"
 import {
   ArrowUpDown,
   Calendar,
@@ -16,6 +15,7 @@ import {
   UserCheck,
   X,
 } from "lucide-react"
+import { useMemo, useState } from "react"
 import api from "@/api"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -40,16 +40,16 @@ import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useToast } from "@/hooks/use-toast"
 import useAuth from "@/hooks/useAuth"
 import { useProjects } from "@/hooks/useProjects"
 import {
-  useTasks,
+  type Task,
   useCreateTask,
-  useUpdateTask,
   useDeleteTask,
-  Task,
+  useTasks,
+  useUpdateTask,
 } from "@/hooks/useTasks"
-import { useToast } from "@/hooks/use-toast"
 
 type SortField = "title" | "project_name" | "status" | "priority" | "due_date"
 type SortOrder = "asc" | "desc"
@@ -57,9 +57,11 @@ type SortOrder = "asc" | "desc"
 export default function TasksPage() {
   const { user } = useAuth()
   const userId = user?.id
-  const { data: tasks = [], isLoading, isError } = useTasks(
-    userId ? { assignee_id: userId } : undefined,
-  )
+  const {
+    data: tasks = [],
+    isLoading,
+    isError,
+  } = useTasks(userId ? { assignee_id: userId } : undefined)
   const { data: projectsData } = useProjects()
   const { toast } = useToast()
 
@@ -150,7 +152,7 @@ export default function TasksPage() {
       .filter((t) => {
         const matchesSearch =
           t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (t.project_name && t.project_name.toLowerCase().includes(searchQuery.toLowerCase()))
+          t.project_name?.toLowerCase().includes(searchQuery.toLowerCase())
 
         const matchesStatus =
           statusFilter === "all" || t.status === statusFilter
@@ -161,8 +163,8 @@ export default function TasksPage() {
         return matchesSearch && matchesStatus && matchesPriority
       })
       .sort((a, b) => {
-        let valA = a[sortField] || ""
-        let valB = b[sortField] || ""
+        const valA = a[sortField] || ""
+        const valB = b[sortField] || ""
 
         if (sortOrder === "desc") {
           return valA < valB ? 1 : valA > valB ? -1 : 0
@@ -176,7 +178,9 @@ export default function TasksPage() {
     const total = tasks.length
     const completed = tasks.filter((t) => t.status === "done").length
     const inProgress = tasks.filter((t) => t.status === "in_progress").length
-    const urgent = tasks.filter((t) => t.priority === "urgent" || t.priority === "high").length
+    const urgent = tasks.filter(
+      (t) => t.priority === "urgent" || t.priority === "high",
+    ).length
     return { total, completed, inProgress, urgent }
   }, [tasks])
 
@@ -317,8 +321,12 @@ export default function TasksPage() {
         <Card className="bg-card/60 border-border">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground font-medium">Total Tasks</p>
-              <p className="text-xl font-bold text-foreground mt-0.5">{stats.total}</p>
+              <p className="text-xs text-muted-foreground font-medium">
+                Total Tasks
+              </p>
+              <p className="text-xl font-bold text-foreground mt-0.5">
+                {stats.total}
+              </p>
             </div>
             <div className="h-8 w-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
               <FolderKanban size={18} />
@@ -329,8 +337,12 @@ export default function TasksPage() {
         <Card className="bg-card/60 border-border">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground font-medium">In Progress</p>
-              <p className="text-xl font-bold text-foreground mt-0.5">{stats.inProgress}</p>
+              <p className="text-xs text-muted-foreground font-medium">
+                In Progress
+              </p>
+              <p className="text-xl font-bold text-foreground mt-0.5">
+                {stats.inProgress}
+              </p>
             </div>
             <div className="h-8 w-8 rounded-lg bg-info/10 text-info flex items-center justify-center">
               <Clock size={18} />
@@ -341,8 +353,12 @@ export default function TasksPage() {
         <Card className="bg-card/60 border-border">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground font-medium">Completed</p>
-              <p className="text-xl font-bold text-foreground mt-0.5">{stats.completed}</p>
+              <p className="text-xs text-muted-foreground font-medium">
+                Completed
+              </p>
+              <p className="text-xl font-bold text-foreground mt-0.5">
+                {stats.completed}
+              </p>
             </div>
             <div className="h-8 w-8 rounded-lg bg-success/10 text-success flex items-center justify-center">
               <CheckCircle2 size={18} />
@@ -353,8 +369,12 @@ export default function TasksPage() {
         <Card className="bg-card/60 border-border">
           <CardContent className="p-3.5 flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground font-medium">High / Urgent</p>
-              <p className="text-xl font-bold text-foreground mt-0.5">{stats.urgent}</p>
+              <p className="text-xs text-muted-foreground font-medium">
+                High / Urgent
+              </p>
+              <p className="text-xl font-bold text-foreground mt-0.5">
+                {stats.urgent}
+              </p>
             </div>
             <div className="h-8 w-8 rounded-lg bg-destructive/10 text-destructive flex items-center justify-center">
               <UserCheck size={18} />
@@ -367,7 +387,10 @@ export default function TasksPage() {
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card/40 p-3 rounded-xl border border-border">
         {/* Search */}
         <div className="relative flex-1 max-w-sm">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Search
+            size={15}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+          />
           <Input
             placeholder="Search tasks or projects..."
             className="pl-9 h-9 text-sm"
@@ -378,7 +401,10 @@ export default function TasksPage() {
 
         {/* Dropdown Filters */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-          <Filter size={14} className="text-muted-foreground shrink-0 hidden sm:block" />
+          <Filter
+            size={14}
+            className="text-muted-foreground shrink-0 hidden sm:block"
+          />
 
           {/* Status Filter */}
           <select
@@ -406,7 +432,9 @@ export default function TasksPage() {
             <option value="urgent">Urgent</option>
           </select>
 
-          {(searchQuery || statusFilter !== "all" || priorityFilter !== "all") && (
+          {(searchQuery ||
+            statusFilter !== "all" ||
+            priorityFilter !== "all") && (
             <Button
               variant="ghost"
               size="sm"
@@ -440,7 +468,9 @@ export default function TasksPage() {
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
               <CheckCircle2 size={24} />
             </div>
-            <h3 className="text-lg font-medium text-foreground">No tasks found</h3>
+            <h3 className="text-lg font-medium text-foreground">
+              No tasks found
+            </h3>
             <p className="text-sm text-muted-foreground max-w-sm mx-auto">
               {searchQuery || statusFilter !== "all" || priorityFilter !== "all"
                 ? "No tasks match your filter criteria."
@@ -514,7 +544,8 @@ export default function TasksPage() {
                   const isOverdue =
                     task.due_date &&
                     !isDone &&
-                    new Date(task.due_date) < new Date(new Date().setHours(0, 0, 0, 0))
+                    new Date(task.due_date) <
+                      new Date(new Date().setHours(0, 0, 0, 0))
 
                   return (
                     <tr
@@ -523,7 +554,10 @@ export default function TasksPage() {
                       onClick={() => openTaskDetail(task)}
                     >
                       {/* Checkbox / Status Toggle */}
-                      <td className="px-3 py-3.5 text-center" onClick={(e) => e.stopPropagation()}>
+                      <td
+                        className="px-3 py-3.5 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <button
                           type="button"
                           className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
@@ -560,7 +594,9 @@ export default function TasksPage() {
                         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium bg-secondary/50 text-secondary-foreground">
                           <span
                             className="w-2 h-2 rounded-full shrink-0"
-                            style={{ backgroundColor: task.project_color || "#6366f1" }}
+                            style={{
+                              backgroundColor: task.project_color || "#6366f1",
+                            }}
                           />
                           {task.project_name || "General"}
                         </span>
@@ -588,7 +624,8 @@ export default function TasksPage() {
                       <td className="px-4 py-3.5">
                         <Badge
                           variant={
-                            task.priority === "high" || task.priority === "urgent"
+                            task.priority === "high" ||
+                            task.priority === "urgent"
                               ? "destructive"
                               : task.priority === "medium"
                                 ? "warning"
@@ -605,7 +642,9 @@ export default function TasksPage() {
                         <div className="flex items-center gap-2">
                           <Avatar className="h-6 w-6 shrink-0">
                             <AvatarFallback className="text-[10px] bg-primary/10 text-primary font-bold">
-                              {(user?.full_name || user?.email || "U")[0].toUpperCase()}
+                              {(user?.full_name ||
+                                user?.email ||
+                                "U")[0].toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                           <span className="text-xs text-foreground font-medium truncate max-w-[120px]">
@@ -628,21 +667,33 @@ export default function TasksPage() {
                             {new Date(task.due_date).toLocaleDateString()}
                           </span>
                         ) : (
-                          <span className="text-muted-foreground text-xs">—</span>
+                          <span className="text-muted-foreground text-xs">
+                            —
+                          </span>
                         )}
                       </td>
 
                       {/* Actions Menu */}
-                      <td className="px-3 py-3.5 text-center" onClick={(e) => e.stopPropagation()}>
+                      <td
+                        className="px-3 py-3.5 text-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon-sm" className="h-7 w-7 text-muted-foreground">
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="h-7 w-7 text-muted-foreground"
+                            >
                               <MoreHorizontal size={14} />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent side="left" align="start">
-                            <DropdownMenuItem onClick={() => openTaskDetail(task)}>
-                              <MessageSquare size={14} className="mr-2" /> Details & Comments
+                            <DropdownMenuItem
+                              onClick={() => openTaskDetail(task)}
+                            >
+                              <MessageSquare size={14} className="mr-2" />{" "}
+                              Details & Comments
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="text-destructive focus:text-destructive"
@@ -713,9 +764,16 @@ export default function TasksPage() {
 
               {/* Assignee Select (Mandatory Project Member) */}
               <div className="space-y-1.5">
-                <Label htmlFor="task-assignee" className="flex items-center justify-between">
+                <Label
+                  htmlFor="task-assignee"
+                  className="flex items-center justify-between"
+                >
                   <span>Assignee *</span>
-                  {loadingMembers && <span className="text-xs text-muted-foreground">Loading members...</span>}
+                  {loadingMembers && (
+                    <span className="text-xs text-muted-foreground">
+                      Loading members...
+                    </span>
+                  )}
                 </Label>
                 <select
                   id="task-assignee"
@@ -797,13 +855,21 @@ export default function TasksPage() {
             </div>
 
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setShowAdd(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowAdd(false)}
+              >
                 Cancel
               </Button>
-              <Button type="submit" disabled={createTaskMutation.isPending || !addAssigneeId}>
+              <Button
+                type="submit"
+                disabled={createTaskMutation.isPending || !addAssigneeId}
+              >
                 {createTaskMutation.isPending ? (
                   <>
-                    <Loader2 size={16} className="animate-spin mr-1" /> Creating...
+                    <Loader2 size={16} className="animate-spin mr-1" />{" "}
+                    Creating...
                   </>
                 ) : (
                   "Create Task"
@@ -842,7 +908,8 @@ export default function TasksPage() {
                 </Badge>
                 <Badge
                   variant={
-                    selectedTask.priority === "high" || selectedTask.priority === "urgent"
+                    selectedTask.priority === "high" ||
+                    selectedTask.priority === "urgent"
                       ? "destructive"
                       : "secondary"
                   }
@@ -858,7 +925,9 @@ export default function TasksPage() {
               </div>
 
               <div className="space-y-1">
-                <p className="text-xs font-semibold text-muted-foreground uppercase">Description</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase">
+                  Description
+                </p>
                 <p className="text-sm text-foreground leading-relaxed">
                   {selectedTask.description || "No description provided."}
                 </p>
@@ -873,17 +942,27 @@ export default function TasksPage() {
                 </p>
                 <div className="space-y-2">
                   {comments.length === 0 ? (
-                    <p className="text-xs text-muted-foreground italic">No comments yet.</p>
+                    <p className="text-xs text-muted-foreground italic">
+                      No comments yet.
+                    </p>
                   ) : (
                     comments.map((c) => (
-                      <div key={c.id} className="p-3 rounded-lg bg-accent/40 text-xs space-y-1">
+                      <div
+                        key={c.id}
+                        className="p-3 rounded-lg bg-accent/40 text-xs space-y-1"
+                      >
                         <div className="flex items-center justify-between font-semibold text-foreground">
                           <span>{c.user_full_name || "User"}</span>
                           <span className="text-[10px] text-muted-foreground">
-                            {new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(c.created_at).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
                           </span>
                         </div>
-                        <p className="text-muted-foreground whitespace-pre-wrap">{c.content}</p>
+                        <p className="text-muted-foreground whitespace-pre-wrap">
+                          {c.content}
+                        </p>
                       </div>
                     ))
                   )}
@@ -895,7 +974,12 @@ export default function TasksPage() {
                     value={commentText}
                     onChange={(e) => setCommentText(e.target.value)}
                   />
-                  <Button type="submit" size="sm" disabled={commentSubmitting} className="w-full">
+                  <Button
+                    type="submit"
+                    size="sm"
+                    disabled={commentSubmitting}
+                    className="w-full"
+                  >
                     {commentSubmitting ? "Posting..." : "Post Comment"}
                   </Button>
                 </form>

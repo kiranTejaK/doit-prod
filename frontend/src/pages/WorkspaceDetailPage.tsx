@@ -1,4 +1,3 @@
-import { Link, useParams } from "react-router-dom"
 import {
   ArrowLeft,
   Briefcase,
@@ -10,6 +9,7 @@ import {
   UserMinus,
   Users,
 } from "lucide-react"
+import { Link, useParams } from "react-router-dom"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -21,13 +21,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useToast } from "@/hooks/use-toast"
 import useAuth from "@/hooks/useAuth"
 import {
   useRemoveWorkspaceMember,
   useUpdateWorkspaceMemberRole,
   useWorkspaceDetail,
 } from "@/hooks/useWorkspaces"
-import { useToast } from "@/hooks/use-toast"
 
 export default function WorkspaceDetailPage() {
   const { workspaceId } = useParams<{ workspaceId: string }>()
@@ -54,7 +54,9 @@ export default function WorkspaceDetailPage() {
   if (!data?.workspace) {
     return (
       <div className="py-12 text-center space-y-4 max-w-md mx-auto">
-        <h2 className="text-xl font-bold text-foreground">Workspace not found</h2>
+        <h2 className="text-xl font-bold text-foreground">
+          Workspace not found
+        </h2>
         <Button variant="outline" asChild>
           <Link to="/workspaces">
             <ArrowLeft size={16} /> Back to Workspaces
@@ -69,7 +71,10 @@ export default function WorkspaceDetailPage() {
   const isOwnerOrSuperuser =
     Boolean(currentUser?.is_superuser) || currentUser?.id === workspace.owner_id
 
-  const handleRoleChange = async (userId: string, newRole: "admin" | "member") => {
+  const handleRoleChange = async (
+    userId: string,
+    newRole: "admin" | "member",
+  ) => {
     if (!workspaceId) return
     try {
       await updateRole.mutateAsync({ workspaceId, userId, role: newRole })
@@ -81,7 +86,8 @@ export default function WorkspaceDetailPage() {
     } catch (err: any) {
       toast({
         title: "Error updating role",
-        description: err.response?.data?.detail || "Failed to update member role.",
+        description:
+          err.response?.data?.detail || "Failed to update member role.",
         variant: "destructive",
       })
     }
@@ -109,7 +115,12 @@ export default function WorkspaceDetailPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Back button + Header */}
       <div>
-        <Button variant="ghost" size="sm" className="mb-2 -ml-2 text-muted-foreground gap-1.5" asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mb-2 -ml-2 text-muted-foreground gap-1.5"
+          asChild
+        >
           <Link to="/workspaces">
             <ArrowLeft size={14} /> Workspaces
           </Link>
@@ -123,7 +134,9 @@ export default function WorkspaceDetailPage() {
               {workspace.name}
             </h1>
             {workspace.description && (
-              <p className="text-sm text-muted-foreground">{workspace.description}</p>
+              <p className="text-sm text-muted-foreground">
+                {workspace.description}
+              </p>
             )}
           </div>
         </div>
@@ -141,13 +154,19 @@ export default function WorkspaceDetailPage() {
         {projects.length === 0 ? (
           <Card className="border-dashed py-8 text-center">
             <CardContent>
-              <p className="text-sm text-muted-foreground">No projects in this workspace yet.</p>
+              <p className="text-sm text-muted-foreground">
+                No projects in this workspace yet.
+              </p>
             </CardContent>
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {projects.map((project) => (
-              <Link key={project.id} to={`/projects/${project.id}`} className="group">
+              <Link
+                key={project.id}
+                to={`/projects/${project.id}`}
+                className="group"
+              >
                 <Card className="h-full transition-all group-hover:border-primary/50 group-hover:shadow-md">
                   <CardContent className="p-5 flex items-start gap-3">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-secondary-foreground">
@@ -184,22 +203,31 @@ export default function WorkspaceDetailPage() {
                   <th className="px-4 py-3">Member</th>
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Role</th>
-                  {isOwnerOrSuperuser && <th className="px-4 py-3 text-right">Actions</th>}
+                  {isOwnerOrSuperuser && (
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {members.length === 0 ? (
                   <tr>
-                    <td colSpan={isOwnerOrSuperuser ? 4 : 3} className="px-4 py-6 text-center text-muted-foreground">
+                    <td
+                      colSpan={isOwnerOrSuperuser ? 4 : 3}
+                      className="px-4 py-6 text-center text-muted-foreground"
+                    >
                       No members found.
                     </td>
                   </tr>
                 ) : (
                   members.map((m) => {
-                    const isWorkspaceOwnerRow = m.id === workspace.owner_id || m.role === "owner"
+                    const isWorkspaceOwnerRow =
+                      m.id === workspace.owner_id || m.role === "owner"
 
                     return (
-                      <tr key={m.id} className="hover:bg-accent/40 transition-colors">
+                      <tr
+                        key={m.id}
+                        className="hover:bg-accent/40 transition-colors"
+                      >
                         <td className="px-4 py-3 font-medium text-foreground">
                           <div className="flex items-center gap-2.5">
                             <Avatar className="h-7 w-7">
@@ -210,10 +238,18 @@ export default function WorkspaceDetailPage() {
                             <span>{m.full_name || "Member"}</span>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-muted-foreground">{m.email}</td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {m.email}
+                        </td>
                         <td className="px-4 py-3">
                           <Badge
-                            variant={m.role === "owner" ? "default" : m.role === "admin" ? "secondary" : "outline"}
+                            variant={
+                              m.role === "owner"
+                                ? "default"
+                                : m.role === "admin"
+                                  ? "secondary"
+                                  : "outline"
+                            }
                             className="capitalize text-[11px]"
                           >
                             {m.role}
@@ -222,7 +258,9 @@ export default function WorkspaceDetailPage() {
                         {isOwnerOrSuperuser && (
                           <td className="px-4 py-3 text-right">
                             {isWorkspaceOwnerRow ? (
-                              <span className="text-xs text-muted-foreground italic pr-2">Owner</span>
+                              <span className="text-xs text-muted-foreground italic pr-2">
+                                Owner
+                              </span>
                             ) : (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -232,14 +270,28 @@ export default function WorkspaceDetailPage() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
                                   {m.role === "member" && (
-                                    <DropdownMenuItem onClick={() => handleRoleChange(m.id, "admin")}>
-                                      <ShieldCheck size={14} className="mr-2 text-primary" />
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleRoleChange(m.id, "admin")
+                                      }
+                                    >
+                                      <ShieldCheck
+                                        size={14}
+                                        className="mr-2 text-primary"
+                                      />
                                       Promote to Admin
                                     </DropdownMenuItem>
                                   )}
                                   {m.role === "admin" && (
-                                    <DropdownMenuItem onClick={() => handleRoleChange(m.id, "member")}>
-                                      <ShieldAlert size={14} className="mr-2 text-amber-500" />
+                                    <DropdownMenuItem
+                                      onClick={() =>
+                                        handleRoleChange(m.id, "member")
+                                      }
+                                    >
+                                      <ShieldAlert
+                                        size={14}
+                                        className="mr-2 text-amber-500"
+                                      />
                                       Demote to Member
                                     </DropdownMenuItem>
                                   )}

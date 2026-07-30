@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import api from "@/api"
 
 export interface Item {
@@ -40,7 +40,13 @@ export function useCreateItem() {
 export function useUpdateItem() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: { title?: string; description?: string } }) => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string
+      data: { title?: string; description?: string }
+    }) => {
       const res = await api.patch(`/api/v1/items/${id}`, data)
       return res.data
     },

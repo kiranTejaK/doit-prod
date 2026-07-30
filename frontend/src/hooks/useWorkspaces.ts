@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import api from "@/api"
 
 export interface Workspace {
@@ -23,7 +23,9 @@ export function useWorkspaces(params?: { skip?: number; limit?: number }) {
   return useQuery({
     queryKey: ["workspaces", { skip, limit }],
     queryFn: async () => {
-      const res = await api.get(`/api/v1/workspaces/?skip=${skip}&limit=${limit}`)
+      const res = await api.get(
+        `/api/v1/workspaces/?skip=${skip}&limit=${limit}`,
+      )
       return {
         workspaces: (res.data.data || []) as Workspace[],
         count: (res.data.count || 0) as number,
@@ -70,7 +72,11 @@ export function useCreateWorkspace() {
 
 export function useInviteMember() {
   return useMutation({
-    mutationFn: async (data: { email: string; workspace_id: string; role?: string }) => {
+    mutationFn: async (data: {
+      email: string
+      workspace_id: string
+      role?: string
+    }) => {
       const res = await api.post("/api/v1/invitations/", {
         ...data,
         role: data.role || "member",
@@ -84,14 +90,23 @@ export function useUpdateWorkspaceMemberRole() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (data: { workspaceId: string; userId: string; role: "admin" | "member" }) => {
-      const res = await api.put(`/api/v1/workspaces/${data.workspaceId}/members/${data.userId}`, {
-        role: data.role,
-      })
+    mutationFn: async (data: {
+      workspaceId: string
+      userId: string
+      role: "admin" | "member"
+    }) => {
+      const res = await api.put(
+        `/api/v1/workspaces/${data.workspaceId}/members/${data.userId}`,
+        {
+          role: data.role,
+        },
+      )
       return res.data
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["workspace", variables.workspaceId] })
+      queryClient.invalidateQueries({
+        queryKey: ["workspace", variables.workspaceId],
+      })
     },
   })
 }
@@ -101,12 +116,15 @@ export function useRemoveWorkspaceMember() {
 
   return useMutation({
     mutationFn: async (data: { workspaceId: string; userId: string }) => {
-      const res = await api.delete(`/api/v1/workspaces/${data.workspaceId}/members/${data.userId}`)
+      const res = await api.delete(
+        `/api/v1/workspaces/${data.workspaceId}/members/${data.userId}`,
+      )
       return res.data
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["workspace", variables.workspaceId] })
+      queryClient.invalidateQueries({
+        queryKey: ["workspace", variables.workspaceId],
+      })
     },
   })
 }
-
