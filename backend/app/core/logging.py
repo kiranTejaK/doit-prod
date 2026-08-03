@@ -53,7 +53,8 @@ def setup_logging() -> None:
 
     # 5. Structlog Global Configuration
     structlog.configure(
-        processors=processors + [renderer],
+        #processors=processors + [renderer],
+        processors=processors + [structlog.stdlib.ProcessorFormatter.wrap_for_formatter],
         context_class=dict,
         logger_factory=structlog.stdlib.LoggerFactory(),  # Tells structlog to route final output through stdlib logging
         wrapper_class=structlog.stdlib.BoundLogger,

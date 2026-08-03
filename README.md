@@ -59,6 +59,7 @@ Built with high performance, strict type safety, and clean architecture in mind,
 - **Containerization**: Docker & Docker Compose
 - **Production Server**: Nginx (serving static precompiled Vite bundle for frontend)
 - **Reverse Proxy**: Traefik (handles automatic SSL/TLS via Let's Encrypt)
+- **Observability & Logging**: Loki + Promtail + Grafana (centralized log aggregation & dashboard metrics - see [Observability Guide](file:///c:/Users/kiran/Desktop/doit-prod/docs/observability.md))
 - **CI/CD**: GitHub Actions (linting, type checking, test execution, remote deployment)
 
 ---
@@ -67,16 +68,26 @@ Built with high performance, strict type safety, and clean architecture in mind,
 
 ```text
 doit-prod/
+├── .agents/                        # AI context and workspace guidelines
+│   ├── AGENTS.md                   # AI Coding operating manual
+│   ├── DECISIONS.md                # Architectural Decision Records (ADR)
+│   ├── PRD.md                      # Product Requirements Document
+│   └── TASKS.md                    # Engineering roadmap & tasks
 ├── backend/
 │   ├── app/
 │   │   ├── api/
 │   │   │   ├── deps.py             # Dependency injection (SessionDep, CurrentUser)
-│   │   │   └── routes/             # FastAPI Endpoint Routers (workspaces, projects, tasks, comments, users)
+│   │   │   └── routes/             # FastAPI Endpoint Routers
 │   │   ├── models.py               # SQLAlchemy / SQLModel database entities
 │   │   ├── schemas.py              # Pydantic v2 Request/Response validation schemas
 │   │   └── services/               # Business logic services (auth, tasks, workspaces, permissions)
 │   ├── Dockerfile
 │   └── pyproject.toml
+├── docs/                           # Project documentation
+│   ├── architecture.md             # System architecture & project showcase
+│   ├── deployment-guide.md         # CI/CD and VPS deployment instructions
+│   ├── architecture.png            # Architecture diagram image
+│   └── erd.png                     # Entity relationship diagram image
 ├── frontend/
 │   ├── src/
 │   │   ├── api.ts                  # Central Axios instance with authorization interceptor
@@ -84,17 +95,12 @@ doit-prod/
 │   │   │   ├── ui/                 # Reusable Shadcn UI primitives (Button, Card, Dialog, Badge, etc.)
 │   │   │   └── Common/             # Global layout & shared presentation components
 │   │   ├── hooks/                  # Custom TanStack Query mutation & query hooks
-│   │   └── pages/                  # Top-level view components (ProjectDetailPage, TasksPage, WorkspacesPage, SettingsPage)
+│   │   └── pages/                  # Top-level view components
 │   ├── Dockerfile
 │   ├── package.json
 │   └── vite.config.ts
 ├── docker-compose.yml              # Local & development orchestration
-├── README.md
-├── ARCHITECTURE.md
-├── PRD.md
-├── AGENTS.md
-├── DECISIONS.md
-└── TASKS.md
+└── README.md
 ```
 
 ---

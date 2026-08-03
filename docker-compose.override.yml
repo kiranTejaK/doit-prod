@@ -127,6 +127,19 @@ services:
     ports:
       - 9323:9323
 
+  loki:
+    restart: "no"
+    ports:
+      - "3100:3100"
+
+  promtail:
+    restart: "no"
+
+  grafana:
+    restart: "no"
+    ports:
+      - "3000:3000"
+
 networks:
   traefik-public:
     # For local dev, don't expect an external Traefik network

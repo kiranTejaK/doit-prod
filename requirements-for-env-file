@@ -1,0 +1,106 @@
+# External Setup Guide — KnowIT Environment Variables (`.env`)
+
+This guide outlines the external setup steps required to obtain credentials for **KnowIT** services (Groq LLM API, AWS S3 Object Storage, Brevo SMTP Email, and JWT Security Keys).
+
+---
+
+## 1. Secret Key Generation (`SECRET_KEY`)
+
+The `SECRET_KEY` is used by FastAPI to sign and verify HMAC-SHA256 JWT access tokens.
+
+### How to Generate
+Run either command in your terminal:
+```bash
+# Using OpenSSL (recommended)
+openssl rand -hex 32
+
+# Or using Python
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+Copy the generated 64-character string and set it in `.env`:
+```ini
+SECRET_KEY=e4f9b8c2d1a3...
+```
+
+---
+
+## 2. Groq LLM API Key (`GROQ_API_KEY`)
+
+KnowIT uses **Groq** for high-speed LLM inference (`llama-3.3-70b-versatile`).
+
+### External Setup Steps
+1. Navigate to [Groq Console](https://console.groq.com/keys).
+2. Sign up or log in with your account.
+3. Click **Create API Key**.
+4. Give it a name (e.g. `knowit-dev`).
+5. Copy the generated key (starts with `gsk_`).
+6. Set it in `.env`:
+```ini
+GROQ_API_KEY=gsk_abcdef123456...
+LLM_PROVIDER=groq
+```
+
+---
+
+## 3. AWS S3 Bucket Setup (`S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
+
+KnowIT stores uploaded PDF, DOCX, TXT, and Markdown files in **AWS S3**.
+
+### External Setup Steps
+1. **Create an S3 Bucket**:
+   * Open the [AWS S3 Console](https://s3.console.aws.amazon.com/).
+   * Click **Create bucket**.
+   * Enter a unique bucket name (e.g., `knowit-documents-bucket`).
+   * Select your preferred AWS Region (e.g., `us-east-1`).
+   * Keep **Block all public access** enabled (KnowIT uses private S3 keys).
+   * Click **Create bucket**.
+
+2. **Create IAM Credentials**:
+   * Open the [AWS IAM Console](https://console.aws.amazon.com/iam/).
+   * Go to **Users** -> **Add users**.
+   * Name: `knowit-app-user`.
+   * Attach policy directly: search for `AmazonS3FullAccess` (or create a custom inline policy for your specific bucket).
+   * Go to the created user's **Security credentials** tab.
+   * Click **Create access key** -> Choose **Application running outside AWS**.
+   * Copy the **Access Key ID** and **Secret Access Key**.
+
+3. Set in `.env`:
+```ini
+S3_BUCKET=knowit-documents-bucket
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+AWS_REGION=us-east-1
+```
+
+---
+
+## 4. Brevo SMTP Email Setup (`SMTP_USER`, `SMTP_PASSWORD`)
+
+KnowIT uses **Brevo** (formerly Sendinblue) SMTP for sending account verification and password reset emails.
+
+### External Setup Steps
+1. Go to [Brevo Sign-up](https://www.brevo.com/) and log in.
+2. Click your account name in the top right -> **SMTP & API Keys**.
+3. Select the **SMTP** tab.
+4. Note your **SMTP Server** (`smtp-relay.brevo.com`), **Port** (`587`), and **Login email**.
+5. Click **Generate a new SMTP key**.
+6. Copy the generated master key (starts with `xsmtpsib-`).
+7. Set in `.env`:
+```ini
+SMTP_HOST=smtp-relay.brevo.com
+SMTP_PORT=587
+SMTP_TLS=True
+SMTP_USER=your_email@domain.com
+SMTP_PASSWORD=xsmtpsib-abcdef12345...
+EMAILS_FROM_EMAIL=noreply@knowit.app
+EMAILS_FROM_NAME=KnowIT
+```
+
+---
+
+## 5. PostgreSQL Database Server (`POSTGRES_SERVER`)
+
+* **When running full stack with Docker Compose (`docker compose up`)**:
+  Keep `POSTGRES_SERVER=postgres` (matches container name in `docker-compose.yml`).
+* **When running FastAPI backend locally outside Docker (`uv run uvicorn`)**:
+  Set `POSTGRES_SERVER=localhost`.
