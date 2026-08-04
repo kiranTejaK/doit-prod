@@ -1,9 +1,9 @@
+from contextlib import asynccontextmanager
+
 import sentry_sdk
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from starlette.middleware.cors import CORSMiddleware
-
-from contextlib import asynccontextmanager
 
 from app.api.main import api_router
 from app.core.config import settings
@@ -12,7 +12,7 @@ from app.middleware.RequestLoggingMiddleware import RequestLoggingMiddleware
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     # Initialize logging system on startup
     setup_logging()
     yield
