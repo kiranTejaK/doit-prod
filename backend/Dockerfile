@@ -1,5 +1,5 @@
 # Stage 1: Build stage
-FROM python:3.12-slim AS build-stage
+FROM python:3.14-slim AS build-stage
 
 ENV PYTHONUNBUFFERED=1
 ENV UV_COMPILE_BYTECODE=1
@@ -27,7 +27,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 
 # Stage 2: Production stage
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 ENV PYTHONUNBUFFERED=1
 # Place executables in the environment at the front of the path
