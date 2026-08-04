@@ -12,6 +12,10 @@ CORRELATION_HEADER = "X-Correlation-ID"
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
+        # Skip logging completely for health checks to prevent log spam
+        if request.url.path.endswith("/health-check/"):
+            return await call_next(request)
+
         correlation_id = request.headers.get(CORRELATION_HEADER) or str(uuid.uuid4())
         request.state.correlation_id = correlation_id
 
