@@ -14,11 +14,11 @@ api.interceptors.request.use((config) => {
   return config
 })
 
-// On 401/403, clear token and redirect to login
+// On 401 (Unauthorized), clear token and redirect to login
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && [401, 403].includes(error.response.status)) {
+    if (error.response && error.response.status === 401) {
       localStorage.removeItem("access_token")
       window.location.href = "/login"
     }

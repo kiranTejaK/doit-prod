@@ -104,3 +104,21 @@ def get_task(
 
 3. **Docker Nginx Caching:**
    - Vite Hot Module Replacement (HMR) only works if running `npm run dev` directly on host. When testing in Docker Compose, always rebuild images after source changes (`docker compose up -d --build`).
+
+---
+
+## 5. Future Architectural Improvements (Deferred)
+
+The following improvements are planned for the future to reach "perfect" production readiness. **They are currently explicitly deferred to avoid overloading the lightweight (1GB RAM) VPS.** Do NOT implement these without explicit user permission.
+
+1. **Error Tracking (Sentry):**
+   - **What:** Add `sentry-sdk` for automatic unhandled exception and crash reporting.
+   - **Why:** To pinpoint the exact Python line and variable state when 500 errors occur, without digging through logs.
+
+2. **Automated DB Backups:**
+   - **What:** Create a cron job (or Docker container) running `pg_dump`.
+   - **Why:** To take nightly snapshots of the PostgreSQL database and safely upload them to AWS S3.
+
+3. **Hardware Metrics (Prometheus + Node Exporter):**
+   - **What:** Run Prometheus and Node Exporter alongside Loki in the observability stack.
+   - **Why:** To visualize exact VPS CPU, Memory, and Disk usage directly inside Grafana dashboards.
