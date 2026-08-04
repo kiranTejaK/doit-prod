@@ -36,8 +36,9 @@ ENV PYTHONPATH=/app
 
 WORKDIR /app/
 
-# Create a non-root user for better security
+# Create a non-root user for better security and pre-create logs directory so named volumes inherit permissions
 RUN useradd -m appuser && chown -R appuser /app
+RUN mkdir -p /app/logs && chown -R appuser:appuser /app/logs
 USER appuser
 
 # Copy virtual environment and app code from build stage
