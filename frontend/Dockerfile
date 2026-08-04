@@ -1,5 +1,5 @@
 # Stage 0: Build stage using an LTS Alpine-based Node image
-FROM node:22-alpine AS build-stage
+FROM node:26-alpine AS build-stage
 
 # Avoid downloading Playwright browsers which bloat the image and slow down builds
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
