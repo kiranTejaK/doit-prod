@@ -180,7 +180,7 @@ services:
       - default
 
   promtail:
-    image: grafana/promtail:3.0.0
+    image: grafana/promtail:3.6.8
     restart: always
     volumes:
       - ./docker/promtail/promtail-config.yml:/etc/promtail/config.yml
