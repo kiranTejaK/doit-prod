@@ -123,7 +123,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "docker-compose.prod.yml,docker-compose.traefik.yml"
+          source: "docker-compose.prod.yml,docker-compose.traefik.yml,docker/"
           target: "~/doitapp-deploy"
 
       - name: Deploy via SSH
