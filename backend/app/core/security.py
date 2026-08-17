@@ -2,16 +2,33 @@ import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
-import bcrypt
 import jwt
+from passlib.context import CryptContext
 
 from app.core.config import settings
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 ALGORITHM = "HS256"
 
 
-def create_access_token(subject: str | Any, expires_delta: timedelta) -> str:
-    expire = datetime.now(timezone.utc) + expires_delta
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+
+def create_access_token(
+    subject: str | Any, expires_delta: timedelta | None = None
+) -> str:
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
+        )
     to_encode = {
         "exp": expire,
         "sub": str(subject),
@@ -23,33 +40,23 @@ def create_access_token(subject: str | Any, expires_delta: timedelta) -> str:
 
 
 def create_refresh_token(
-    subject: str | Any, expires_delta: timedelta, family_id: str
+    subject: str | Any,
+    expires_delta: timedelta | None = None,
+    family_id: str | None = None,
 ) -> str:
-    expire = datetime.now(timezone.utc) + expires_delta
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(
+            days=settings.REFRESH_TOKEN_EXPIRE_DAYS
+        )
     to_encode = {
         "exp": expire,
         "sub": str(subject),
         "type": "refresh",
-        "family_id": family_id,
         "jti": str(uuid.uuid4()),
     }
+    if family_id:
+        to_encode["family_id"] = family_id
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
-
-
-def verify_password(plain_password: str, hashed_password: str) -> bool:
-    if not plain_password or not hashed_password:
-        return False
-    try:
-        return bcrypt.checkpw(
-            plain_password.encode("utf-8"),
-            hashed_password.encode("utf-8"),
-        )
-    except Exception:
-        return False
-
-
-def get_password_hash(password: str) -> str:
-    pwd_bytes = password.encode("utf-8")
-    salt = bcrypt.gensalt()
-    return bcrypt.hashpw(pwd_bytes, salt).decode("utf-8")

@@ -27,7 +27,7 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           export PATH="$HOME/.local/bin:$PATH"
           cd backend
-          uv pip install --system bcrypt ruff pytest httpx pydantic email-validator tenacity sqlalchemy psycopg pydantic-settings
+          uv pip install --system "bcrypt<4.0.0" passlib ruff pytest httpx pydantic email-validator tenacity sqlalchemy psycopg pydantic-settings
           uv pip install --system -e .
 
       - name: Run Ruff
