@@ -2,7 +2,7 @@ from collections.abc import Generator
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, delete
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -10,7 +10,6 @@ from app.core.config import settings
 settings.ENVIRONMENT = "local"
 from app.core.db import init_db  # noqa: E402
 from app.main import app  # noqa: E402
-from app.models import Item, User  # noqa: E402
 from tests.utils.user import authentication_token_from_email  # noqa: E402
 from tests.utils.utils import get_superuser_token_headers  # noqa: E402
 
@@ -85,8 +84,10 @@ def live_server_url(db_engine) -> Generator[str, None, None]:
     import socket
     import threading
     import time
+
     import httpx
     import uvicorn
+
     from app.api.deps import get_db
 
     def get_test_db():
@@ -126,7 +127,7 @@ def live_server_url(db_engine) -> Generator[str, None, None]:
 
 
 @pytest.fixture(scope="module")
-def live_client(live_server_url: str) -> Generator["httpx.Client", None, None]:
+def live_client(live_server_url: str) -> "Generator[httpx.Client, None, None]":  # noqa: F821
     """Real HTTP client (httpx) making live network requests over local TCP socket."""
     import httpx
     with httpx.Client(base_url=live_server_url, follow_redirects=True, timeout=30.0) as client:

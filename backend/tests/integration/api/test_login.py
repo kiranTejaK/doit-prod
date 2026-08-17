@@ -72,7 +72,7 @@ def test_refresh_token_rotates_tokens(client: TestClient, db: Session) -> None:
     assert old_db_token.is_revoked is True
 
 
-def test_refresh_token_reuse_revokes_family(client: TestClient, db: Session) -> None:
+def test_refresh_token_reuse_revokes_family(client: TestClient) -> None:
     """
     Reusing an already-rotated refresh token (theft simulation) should revoke
     all tokens in that family and return 401.

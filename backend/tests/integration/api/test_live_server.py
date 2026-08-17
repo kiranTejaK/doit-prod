@@ -1,5 +1,7 @@
 import httpx
+
 from app.core.config import settings
+
 
 def test_live_server_login_and_me(
     live_client: httpx.Client, superuser_token_headers: dict[str, str]
