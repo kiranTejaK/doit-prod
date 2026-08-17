@@ -64,7 +64,9 @@ def _issue_token_pair(session: Session, user: User, family_id: str | None = None
         user_id=user.id,
     )
     session.add(db_refresh)
-    session.commit()
+    # flush() writes the row to the current transaction without committing.
+    # The caller's request lifecycle (or the test's transaction fixture) handles the commit.
+    session.flush()
 
     return Token(access_token=access_token, refresh_token=refresh_token_str)
 
@@ -129,7 +131,7 @@ def refresh_access_token(session: SessionDep, body: RefreshTokenRequest) -> Toke
         ).all()
         for t in family_tokens:
             t.is_revoked = True
-        session.commit()
+        session.flush()
         raise HTTPException(
             status_code=401,
             detail="Refresh token already used. Possible token theft — all sessions in this family have been revoked.",
@@ -138,7 +140,7 @@ def refresh_access_token(session: SessionDep, body: RefreshTokenRequest) -> Toke
     # 4. Check token expiry
     if db_token.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
         db_token.is_revoked = True
-        session.commit()
+        session.flush()
         raise HTTPException(status_code=401, detail="Refresh token has expired")
 
     # 5. Load and validate the user
@@ -154,7 +156,7 @@ def refresh_access_token(session: SessionDep, body: RefreshTokenRequest) -> Toke
     # 6. Revoke the current refresh token (single-use)
     db_token.is_revoked = True
     session.add(db_token)
-    session.commit()
+    session.flush()
 
     # 7. Issue a new token pair in the same family (rotation)
     return _issue_token_pair(session=session, user=user, family_id=db_token.family_id)
@@ -171,7 +173,7 @@ def logout(session: SessionDep, body: RefreshTokenRequest) -> Message:
     )
     if db_token and not db_token.is_revoked:
         db_token.is_revoked = True
-        session.commit()
+        session.flush()
     return Message(message="Logged out successfully")
 
 
