@@ -60,7 +60,9 @@ def _issue_token_pair(session: Session, user: User, family_id: str | None = None
     db_refresh = RefreshToken(
         token=refresh_token_str,
         family_id=family_id,
-        expires_at=datetime.now(timezone.utc) + refresh_expires,
+        # Store timezone-naive UTC datetime — SQLite requires naive datetimes;
+        # PostgreSQL (production) accepts both. The value is always UTC.
+        expires_at=(datetime.now(timezone.utc) + refresh_expires).replace(tzinfo=None),
         user_id=user.id,
     )
     session.add(db_refresh)
