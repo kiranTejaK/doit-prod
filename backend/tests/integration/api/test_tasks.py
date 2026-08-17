@@ -16,15 +16,22 @@ def create_project(client: TestClient, headers: dict, workspace_id: str) -> dict
     assert response.status_code == 200
     return response.json()
 
+def get_superuser_id(client: TestClient, headers: dict) -> str:
+    response = client.get(f"{settings.API_V1_STR}/users/me", headers=headers)
+    assert response.status_code == 200
+    return response.json()["id"]
+
 def test_create_task(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
+    user_id = get_superuser_id(client, superuser_token_headers)
     ws = create_workspace(client, superuser_token_headers)
     proj = create_project(client, superuser_token_headers, ws["id"])
 
     data = {
         "title": "Test Task",
         "project_id": proj["id"],
+        "assignee_id": user_id,
         "status": "todo",
         "priority": "medium"
     }
@@ -40,6 +47,7 @@ def test_create_task(
 def test_read_tasks(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
+    user_id = get_superuser_id(client, superuser_token_headers)
     ws = create_workspace(client, superuser_token_headers)
     proj = create_project(client, superuser_token_headers, ws["id"])
 
@@ -47,11 +55,11 @@ def test_read_tasks(
     client.post(
         f"{settings.API_V1_STR}/tasks/",
         headers=superuser_token_headers,
-        json={"title": "Read Task", "project_id": proj["id"]}
+        json={"title": "Read Task", "project_id": proj["id"], "assignee_id": user_id}
     )
 
     response = client.get(
-        f"{settings.API_V1_STR}/tasks/?projectId={proj['id']}",
+        f"{settings.API_V1_STR}/tasks/?project_id={proj['id']}",
         headers=superuser_token_headers
     )
     assert response.status_code == 200
@@ -61,13 +69,14 @@ def test_read_tasks(
 def test_update_task_status(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
+    user_id = get_superuser_id(client, superuser_token_headers)
     ws = create_workspace(client, superuser_token_headers)
     proj = create_project(client, superuser_token_headers, ws["id"])
 
     task = client.post(
         f"{settings.API_V1_STR}/tasks/",
         headers=superuser_token_headers,
-        json={"title": "Status Task", "project_id": proj["id"], "status": "todo"}
+        json={"title": "Status Task", "project_id": proj["id"], "assignee_id": user_id, "status": "todo"}
     ).json()
 
     # Mark as Done
@@ -82,13 +91,14 @@ def test_update_task_status(
 def test_delete_task(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
+    user_id = get_superuser_id(client, superuser_token_headers)
     ws = create_workspace(client, superuser_token_headers)
     proj = create_project(client, superuser_token_headers, ws["id"])
 
     task = client.post(
         f"{settings.API_V1_STR}/tasks/",
         headers=superuser_token_headers,
-        json={"title": "Delete Task", "project_id": proj["id"]}
+        json={"title": "Delete Task", "project_id": proj["id"], "assignee_id": user_id}
     ).json()
 
     response = client.delete(
@@ -103,3 +113,4 @@ def test_delete_task(
         headers=superuser_token_headers
     )
     assert response.status_code == 404
+

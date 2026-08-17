@@ -44,6 +44,7 @@ const useAuth = () => {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       })
       localStorage.setItem("access_token", res.data.access_token)
+      localStorage.setItem("refresh_token", res.data.refresh_token)
       const userRes = await api.get("/api/v1/users/me")
       setUser(userRes.data)
       navigate("/")
@@ -69,8 +70,18 @@ const useAuth = () => {
     }
   }
 
-  const logout = () => {
+  const logout = async () => {
+    const refreshToken = localStorage.getItem("refresh_token")
+    // Revoke refresh token server-side before clearing local storage
+    if (refreshToken) {
+      try {
+        await api.post("/api/v1/login/logout", { refresh_token: refreshToken })
+      } catch {
+        // Ignore errors — clear local storage regardless
+      }
+    }
     localStorage.removeItem("access_token")
+    localStorage.removeItem("refresh_token")
     setUser(null)
     navigate("/login")
   }

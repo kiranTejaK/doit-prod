@@ -46,7 +46,7 @@ jobs:
           EMAILS_FROM_EMAIL: "admin@doit.com"
         run: |
           cd backend
-          pytest tests/unit
+          pytest tests/
 
   test-and-lint-frontend:
     runs-on: ubuntu-latest

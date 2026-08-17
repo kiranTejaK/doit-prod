@@ -39,6 +39,12 @@ def get_current_user(session: SessionDep, token: TokenDep) -> User:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Could not validate credentials",
         )
+    # Ensure only access tokens (not refresh tokens) are accepted here
+    if token_data.type != "access":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid token type",
+        )
     import uuid
 
     try:

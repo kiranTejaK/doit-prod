@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String
@@ -48,6 +48,28 @@ class User(Base):
     projects: Mapped[list["Project"]] = relationship(
         secondary="projectmember", back_populates="members"
     )
+    refresh_tokens: Mapped[list["RefreshToken"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class RefreshToken(Base):
+    __tablename__ = "refreshtoken"
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    token: Mapped[str] = mapped_column(String, unique=True, index=True)
+    # family_id groups tokens issued from the same login session.
+    # Reuse of a revoked token within a family signals theft — the entire family is revoked.
+    family_id: Mapped[str] = mapped_column(String, index=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    is_revoked: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc)
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user.id", ondelete="CASCADE")
+    )
+
+    user: Mapped["User"] = relationship(back_populates="refresh_tokens")
 
 
 class Item(Base):

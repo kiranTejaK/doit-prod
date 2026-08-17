@@ -34,7 +34,7 @@ def get_tasks(
         if assignee_id:
             statement = statement.where(Task.assignee_id == assignee_id)
 
-        count_statement = select(func.count(Task.id)).select_from(statement.subquery())
+        count_statement = select(func.count()).select_from(statement.subquery())
         count = session.execute(count_statement).scalar_one()
 
         statement = statement.offset(skip).limit(limit)
