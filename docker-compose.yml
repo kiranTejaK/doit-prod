@@ -170,7 +170,7 @@ services:
       - traefik.http.middlewares.redirect-to-dashboard.redirectregex.permanent=true
 
   loki:
-    image: grafana/loki:3.0.0
+    image: grafana/loki:3.7.7
     restart: always
     volumes:
       - ./docker/loki/loki-config.yml:/etc/loki/local-config.yaml
