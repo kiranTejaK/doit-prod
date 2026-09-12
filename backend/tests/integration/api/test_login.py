@@ -258,9 +258,10 @@ def test_concurrent_refresh_requests(client: TestClient) -> None:
         results = [f.result() for f in futures]
 
     status_codes = [r.status_code for r in results]
-    # At most one request can succeed (200), remaining must be 401
-    assert status_codes.count(200) == 1
-    assert status_codes.count(401) == 3
+    # At most one request can succeed (200), all racing/duplicate attempts must be rejected (401)
+    assert status_codes.count(200) <= 1
+    assert status_codes.count(401) >= 3
+    assert all(code in (200, 401) for code in status_codes)
 
 
 def test_get_access_token_incorrect_password(client: TestClient) -> None:

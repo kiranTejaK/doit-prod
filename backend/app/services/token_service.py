@@ -1,3 +1,4 @@
+import threading
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -13,6 +14,8 @@ from app.core.config import settings
 from app.models import RefreshToken, User
 
 logger = structlog.get_logger(__name__)
+
+_rotation_lock = threading.Lock()
 
 
 def _utc_now_naive() -> datetime:
@@ -86,123 +89,124 @@ def rotate_refresh_token(
     Returns:
         (new_access_token, new_raw_refresh_token, expires_in_seconds)
     """
-    lookup_hash = security.hash_token(raw_token)
+    with _rotation_lock:
+        lookup_hash = security.hash_token(raw_token)
 
-    # 1. Acquire row with row-level lock (with_for_update) to prevent race conditions
-    query = (
-        select(RefreshToken)
-        .where(
-            or_(
-                RefreshToken.token_hash == lookup_hash,
-                RefreshToken.token == raw_token,
+        # 1. Acquire row with row-level lock (with_for_update) to prevent race conditions
+        query = (
+            select(RefreshToken)
+            .where(
+                or_(
+                    RefreshToken.token_hash == lookup_hash,
+                    RefreshToken.token == raw_token,
+                )
             )
+            .with_for_update()
         )
-        .with_for_update()
-    )
-    db_token = session.scalar(query)
+        db_token = session.scalar(query)
 
-    if db_token is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid refresh token",
-        )
+        if db_token is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid refresh token",
+            )
 
-    now = _utc_now_naive()
+        now = _utc_now_naive()
 
-    # 2. Reuse / Replay Detection:
-    # If the token has already been rotated (used_at is set) or revoked,
-    # someone is replaying an old credential (potential token theft).
-    if db_token.used_at is not None or db_token.revoked_at is not None or db_token.is_revoked:
-        logger.warning(
-            "security_alert_refresh_token_reuse_detected",
-            family_id=db_token.family_id,
-            user_id=str(db_token.user_id),
-            used_at=str(db_token.used_at),
-            revoked_at=str(db_token.revoked_at),
-        )
-        # Immediately invalidate all tokens in this family
-        revoke_family(session=session, family_id=db_token.family_id)
-        session.flush()
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token already used. Possible token theft detected; all sessions in this family have been revoked.",
-        )
+        # 2. Reuse / Replay Detection:
+        # If the token has already been rotated (used_at is set) or revoked,
+        # someone is replaying an old credential (potential token theft).
+        if db_token.used_at is not None or db_token.revoked_at is not None or db_token.is_revoked:
+            logger.warning(
+                "security_alert_refresh_token_reuse_detected",
+                family_id=db_token.family_id,
+                user_id=str(db_token.user_id),
+                used_at=str(db_token.used_at),
+                revoked_at=str(db_token.revoked_at),
+            )
+            # Immediately invalidate all tokens in this family
+            revoke_family(session=session, family_id=db_token.family_id)
+            session.flush()
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token already used. Possible token theft detected; all sessions in this family have been revoked.",
+            )
 
-    # 3. Check expiration
-    if db_token.expires_at < now:
-        db_token.revoked_at = now
-        db_token.is_revoked = True
+        # 3. Check expiration
+        if db_token.expires_at < now:
+            db_token.revoked_at = now
+            db_token.is_revoked = True
+            db_token.updated_at = now
+            session.add(db_token)
+            session.flush()
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Refresh token has expired",
+            )
+
+        # 4. Check user state
+        user = session.get(User, db_token.user_id)
+        if not user or not user.is_active:
+            db_token.revoked_at = now
+            db_token.is_revoked = True
+            session.add(db_token)
+            session.flush()
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found or inactive",
+            )
+
+        # 5. Mark the existing token as USED (rotation)
+        db_token.used_at = now
         db_token.updated_at = now
-        session.add(db_token)
-        session.flush()
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Refresh token has expired",
+
+        # 6. Issue replacement credentials in the same token family
+        expires_in_seconds = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+        new_access_token = security.create_access_token(
+            subject=str(user.id),
+            expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
         )
+        new_raw_refresh = security.generate_refresh_token()
+        new_hash = security.hash_token(new_raw_refresh)
+        new_expires_at = (
+            datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        ).replace(tzinfo=None)
 
-    # 4. Check user state
-    user = session.get(User, db_token.user_id)
-    if not user or not user.is_active:
-        db_token.revoked_at = now
-        db_token.is_revoked = True
-        session.add(db_token)
-        session.flush()
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found or inactive",
-        )
-
-    # 5. Mark the existing token as USED (rotation)
-    db_token.used_at = now
-    db_token.updated_at = now
-
-    # 6. Issue replacement credentials in the same token family
-    expires_in_seconds = settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
-    new_access_token = security.create_access_token(
-        subject=str(user.id),
-        expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
-    )
-    new_raw_refresh = security.generate_refresh_token()
-    new_hash = security.hash_token(new_raw_refresh)
-    new_expires_at = (
-        datetime.now(timezone.utc) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-    ).replace(tzinfo=None)
-
-    new_db_token = RefreshToken(
-        user_id=user.id,
-        token_hash=new_hash,
-        family_id=db_token.family_id,
-        issued_at=now,
-        expires_at=new_expires_at,
-        created_at=now,
-    )
-    try:
-        session.add(new_db_token)
-        session.flush()
-
-        # Link the old token to its replacement
-        db_token.replaced_by = new_db_token.id
-        session.add(db_token)
-        session.flush()
-    except (StaleDataError, OperationalError, DBAPIError) as exc:
-        session.rollback()
-        logger.warning(
-            "concurrent_token_rotation_collision",
+        new_db_token = RefreshToken(
+            user_id=user.id,
+            token_hash=new_hash,
             family_id=db_token.family_id,
-            user_id=str(user.id),
-            error=str(exc),
+            issued_at=now,
+            expires_at=new_expires_at,
+            created_at=now,
         )
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Concurrent refresh request collision. Token already rotated.",
-        )
+        try:
+            session.add(new_db_token)
+            session.flush()
 
-    logger.info(
-        "refresh_token_rotated",
-        user_id=str(user.id),
-        family_id=db_token.family_id,
-    )
-    return new_access_token, new_raw_refresh, expires_in_seconds
+            # Link the old token to its replacement
+            db_token.replaced_by = new_db_token.id
+            session.add(db_token)
+            session.flush()
+        except (StaleDataError, OperationalError, DBAPIError) as exc:
+            session.rollback()
+            logger.warning(
+                "concurrent_token_rotation_collision",
+                family_id=db_token.family_id,
+                user_id=str(user.id),
+                error=str(exc),
+            )
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Concurrent refresh request collision. Token already rotated.",
+            )
+
+        logger.info(
+            "refresh_token_rotated",
+            user_id=str(user.id),
+            family_id=db_token.family_id,
+        )
+        return new_access_token, new_raw_refresh, expires_in_seconds
 
 
 def revoke_refresh_token(
