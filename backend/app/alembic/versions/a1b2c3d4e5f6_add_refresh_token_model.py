@@ -1,7 +1,7 @@
 """add_refresh_token_model
 
 Revision ID: a1b2c3d4e5f6
-Revises: 1a31ce608336
+Revises: 7f287cbcd2ce
 Create Date: 2026-08-17 16:00:00.000000
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = "a1b2c3d4e5f6"
-down_revision: Union[str, None] = "1a31ce608336"
+down_revision: Union[str, None] = "7f287cbcd2ce"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

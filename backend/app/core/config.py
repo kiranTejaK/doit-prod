@@ -32,10 +32,14 @@ class Settings(BaseSettings):
     )
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = secrets.token_urlsafe(32)
-    # 30 minutes for short-lived access tokens (paired with rotating refresh tokens)
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    # 15 minutes for short-lived access tokens (paired with rotating refresh tokens)
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     # 7 days for refresh tokens
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    # Refresh token cookie configurations
+    REFRESH_TOKEN_COOKIE_NAME: str = "refresh_token"
+    REFRESH_TOKEN_COOKIE_SECURE: bool = False
+    REFRESH_TOKEN_COOKIE_SAMESITE: Literal["lax", "strict", "none"] = "lax"
     FRONTEND_HOST: str = "http://localhost:5173"
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
 

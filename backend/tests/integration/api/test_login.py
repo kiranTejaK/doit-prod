@@ -49,6 +49,9 @@ def test_refresh_token_rotates_tokens(client: TestClient, db: Session) -> None:
     login_r = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
     original_tokens = login_r.json()
 
+    assert "expires_in" in original_tokens
+    assert original_tokens["expires_in"] == settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+
     refresh_r = client.post(
         f"{settings.API_V1_STR}/login/refresh-token",
         json={"refresh_token": original_tokens["refresh_token"]},
@@ -58,18 +61,28 @@ def test_refresh_token_rotates_tokens(client: TestClient, db: Session) -> None:
     assert refresh_r.status_code == 200
     assert "access_token" in new_tokens
     assert "refresh_token" in new_tokens
+    assert "expires_in" in new_tokens
     # New tokens must be different from the originals
     assert new_tokens["access_token"] != original_tokens["access_token"]
     assert new_tokens["refresh_token"] != original_tokens["refresh_token"]
 
-    # The old refresh token must be marked as revoked in the DB
+    # The old refresh token must be marked as used in the DB
+    from app.core.security import hash_token
+    old_hash = hash_token(original_tokens["refresh_token"])
     old_db_token = db.scalar(
-        select(RefreshToken).where(
-            RefreshToken.token == original_tokens["refresh_token"]
-        )
+        select(RefreshToken).where(RefreshToken.token_hash == old_hash)
     )
     assert old_db_token is not None
-    assert old_db_token.is_revoked is True
+    assert old_db_token.used_at is not None
+    assert old_db_token.replaced_by is not None
+
+    # Verify the new token works for subsequent rotation
+    subsequent_r = client.post(
+        f"{settings.API_V1_STR}/auth/refresh",
+        json={"refresh_token": new_tokens["refresh_token"]},
+    )
+    assert subsequent_r.status_code == 200
+    assert subsequent_r.json()["access_token"]
 
 
 def test_refresh_token_reuse_revokes_family(client: TestClient) -> None:
@@ -85,19 +98,28 @@ def test_refresh_token_reuse_revokes_family(client: TestClient) -> None:
     original_tokens = login_r.json()
     original_refresh = original_tokens["refresh_token"]
 
-    # Legitimate rotation — original token is now revoked
-    client.post(
+    # Legitimate rotation — original token is now marked used
+    rotate_r = client.post(
         f"{settings.API_V1_STR}/login/refresh-token",
         json={"refresh_token": original_refresh},
     )
+    assert rotate_r.status_code == 200
+    legitimate_new_token = rotate_r.json()["refresh_token"]
 
-    # Attacker replays the original (now-revoked) refresh token
+    # Attacker replays the original (already-used) refresh token
     reuse_r = client.post(
         f"{settings.API_V1_STR}/login/refresh-token",
         json={"refresh_token": original_refresh},
     )
     assert reuse_r.status_code == 401
-    assert "revoked" in reuse_r.json()["detail"].lower()
+    assert "already used" in reuse_r.json()["detail"].lower()
+
+    # The entire family must now be revoked: subsequent use of legitimate_new_token must also fail
+    subsequent_r = client.post(
+        f"{settings.API_V1_STR}/login/refresh-token",
+        json={"refresh_token": legitimate_new_token},
+    )
+    assert subsequent_r.status_code == 401
 
 
 def test_refresh_token_invalid_token_returns_401(client: TestClient) -> None:
@@ -125,11 +147,14 @@ def test_logout_revokes_refresh_token(client: TestClient, db: Session) -> None:
     )
     assert logout_r.status_code == 200
 
+    from app.core.security import hash_token
+    token_hash = hash_token(refresh_token_str)
     db_token = db.scalar(
-        select(RefreshToken).where(RefreshToken.token == refresh_token_str)
+        select(RefreshToken).where(RefreshToken.token_hash == token_hash)
     )
     assert db_token is not None
     assert db_token.is_revoked is True
+    assert db_token.revoked_at is not None
 
     # A subsequent refresh attempt with the logged-out token should fail
     retry_r = client.post(
@@ -137,6 +162,100 @@ def test_logout_revokes_refresh_token(client: TestClient, db: Session) -> None:
         json={"refresh_token": refresh_token_str},
     )
     assert retry_r.status_code == 401
+
+
+def test_cookie_based_refresh_rotation(client: TestClient) -> None:
+    """Refresh token can be passed via HttpOnly cookie."""
+    login_data = {
+        "username": settings.FIRST_SUPERUSER,
+        "password": settings.FIRST_SUPERUSER_PASSWORD,
+    }
+    login_r = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
+    assert login_r.status_code == 200
+    assert settings.REFRESH_TOKEN_COOKIE_NAME in login_r.cookies
+
+    # Call refresh without body payload — cookie is sent automatically by TestClient
+    refresh_r = client.post(f"{settings.API_V1_STR}/login/refresh-token")
+    assert refresh_r.status_code == 200
+    assert "access_token" in refresh_r.json()
+    assert settings.REFRESH_TOKEN_COOKIE_NAME in refresh_r.cookies
+
+
+def test_logout_all_sessions(client: TestClient, superuser_token_headers: dict[str, str]) -> None:
+    """Logout-all revokes all refresh token sessions for the authenticated user."""
+    # Authenticate and obtain two sessions
+    login_data = {
+        "username": settings.FIRST_SUPERUSER,
+        "password": settings.FIRST_SUPERUSER_PASSWORD,
+    }
+    s1 = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data).json()
+    s2 = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data).json()
+
+    # Call logout-all
+    r = client.post(f"{settings.API_V1_STR}/auth/logout-all", headers=superuser_token_headers)
+    assert r.status_code == 200
+
+    # Both sessions should be revoked
+    r1 = client.post(f"{settings.API_V1_STR}/login/refresh-token", json={"refresh_token": s1["refresh_token"]})
+    assert r1.status_code == 401
+
+    r2 = client.post(f"{settings.API_V1_STR}/login/refresh-token", json={"refresh_token": s2["refresh_token"]})
+    assert r2.status_code == 401
+
+
+def test_inactive_user_cannot_refresh(client: TestClient, db: Session) -> None:
+    """An inactive user must be rejected when attempting to refresh."""
+    email = random_email()
+    password = random_lower_string()
+    user_in = UserCreate(email=email, password=password)
+    user = create_user(session=db, user_create=user_in)
+
+    login_r = client.post(
+        f"{settings.API_V1_STR}/login/access-token",
+        data={"username": email, "password": password},
+    )
+    tokens = login_r.json()
+
+    # Deactivate the user
+    user.is_active = False
+    db.add(user)
+    db.commit()
+
+    refresh_r = client.post(
+        f"{settings.API_V1_STR}/login/refresh-token",
+        json={"refresh_token": tokens["refresh_token"]},
+    )
+    assert refresh_r.status_code == 401
+
+
+def test_concurrent_refresh_requests(client: TestClient) -> None:
+    """
+    Simultaneous refresh requests for the same token should allow only one
+    successful rotation.
+    """
+    import concurrent.futures
+
+    login_data = {
+        "username": settings.FIRST_SUPERUSER,
+        "password": settings.FIRST_SUPERUSER_PASSWORD,
+    }
+    login_r = client.post(f"{settings.API_V1_STR}/login/access-token", data=login_data)
+    token = login_r.json()["refresh_token"]
+
+    def attempt_refresh():
+        return client.post(
+            f"{settings.API_V1_STR}/login/refresh-token",
+            json={"refresh_token": token},
+        )
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+        futures = [executor.submit(attempt_refresh) for _ in range(4)]
+        results = [f.result() for f in futures]
+
+    status_codes = [r.status_code for r in results]
+    # At most one request can succeed (200), remaining must be 401
+    assert status_codes.count(200) == 1
+    assert status_codes.count(401) == 3
 
 
 def test_get_access_token_incorrect_password(client: TestClient) -> None:

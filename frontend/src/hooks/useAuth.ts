@@ -1,58 +1,117 @@
-import { useEffect, useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { isAxiosError } from "axios"
+import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import api from "@/api"
 
-const isLoggedIn = () => {
+export interface User {
+  id: string
+  email: string
+  is_active: boolean
+  is_superuser: boolean
+  full_name: string | null
+  job_title: string | null
+  avatar_url: string | null
+}
+
+const isLoggedIn = (): boolean => {
   return localStorage.getItem("access_token") !== null
 }
 
 const useAuth = () => {
-  const [user, setUser] = useState<any>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
-  // Fetch current user on mount if logged in
-  useEffect(() => {
-    if (!isLoggedIn()) {
-      setIsLoading(false)
-      return
-    }
-    let mounted = true
-    api
-      .get("/api/v1/users/me")
-      .then((res) => {
-        if (mounted) setUser(res.data)
-      })
-      .catch(() => {
-        if (mounted) setError("Failed to load user")
-      })
-      .finally(() => {
-        if (mounted) setIsLoading(false)
-      })
-    return () => {
-      mounted = false
-    }
-  }, [])
+  // Fetch current user via TanStack Query
+  const { data: user = null, isLoading } = useQuery<User | null>({
+    queryKey: ["currentUser"],
+    queryFn: async () => {
+      if (!isLoggedIn()) return null
+      const res = await api.get<User>("/api/v1/users/me")
+      return res.data
+    },
+    enabled: isLoggedIn(),
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  })
 
-  const login = async (username: string, password: string) => {
-    try {
+  // Login mutation
+  const loginMutation = useMutation({
+    mutationFn: async ({
+      username,
+      password,
+    }: {
+      username: string
+      password: string
+    }) => {
       const formData = new URLSearchParams()
       formData.append("username", username)
       formData.append("password", password)
       const res = await api.post("/api/v1/login/access-token", formData, {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
       })
-      localStorage.setItem("access_token", res.data.access_token)
-      localStorage.setItem("refresh_token", res.data.refresh_token)
-      const userRes = await api.get("/api/v1/users/me")
-      setUser(userRes.data)
+      return res.data
+    },
+    onSuccess: async (data) => {
+      localStorage.setItem("access_token", data.access_token)
+      if (data.refresh_token) {
+        localStorage.setItem("refresh_token", data.refresh_token)
+      }
+      await queryClient.invalidateQueries({ queryKey: ["currentUser"] })
       navigate("/")
-    } catch (err: any) {
-      const detail = err.response?.data?.detail || "Login failed"
-      setError(typeof detail === "string" ? detail : "Login failed")
-      throw err
+    },
+    onError: (err: unknown) => {
+      let detail = "Login failed"
+      if (isAxiosError(err) && err.response?.data?.detail) {
+        detail = String(err.response.data.detail)
+      }
+      setError(detail)
+    },
+  })
+
+  // Sign up mutation
+  const signUpMutation = useMutation({
+    mutationFn: async (data: {
+      email: string
+      full_name: string
+      password: string
+    }) => {
+      const res = await api.post("/api/v1/users/signup", data)
+      return res.data
+    },
+    onSuccess: () => {
+      navigate("/login")
+    },
+    onError: (err: unknown) => {
+      let detail = "Sign up failed"
+      if (isAxiosError(err) && err.response?.data?.detail) {
+        detail = String(err.response.data.detail)
+      }
+      setError(detail)
+    },
+  })
+
+  // Logout function
+  const logout = async () => {
+    const refreshToken = localStorage.getItem("refresh_token")
+    if (refreshToken) {
+      try {
+        await api.post("/api/v1/login/logout", { refresh_token: refreshToken })
+      } catch {
+        // Ignore network/server errors during logout
+      }
     }
+    localStorage.removeItem("access_token")
+    localStorage.removeItem("refresh_token")
+    queryClient.setQueryData(["currentUser"], null)
+    await queryClient.invalidateQueries({ queryKey: ["currentUser"] })
+    navigate("/login")
+  }
+
+  const login = async (username: string, password: string) => {
+    setError(null)
+    return loginMutation.mutateAsync({ username, password })
   }
 
   const signUp = async (data: {
@@ -60,30 +119,8 @@ const useAuth = () => {
     full_name: string
     password: string
   }) => {
-    try {
-      await api.post("/api/v1/users/signup", data)
-      navigate("/login")
-    } catch (err: any) {
-      const detail = err.response?.data?.detail || "Sign up failed"
-      setError(typeof detail === "string" ? detail : "Sign up failed")
-      throw err
-    }
-  }
-
-  const logout = async () => {
-    const refreshToken = localStorage.getItem("refresh_token")
-    // Revoke refresh token server-side before clearing local storage
-    if (refreshToken) {
-      try {
-        await api.post("/api/v1/login/logout", { refresh_token: refreshToken })
-      } catch {
-        // Ignore errors — clear local storage regardless
-      }
-    }
-    localStorage.removeItem("access_token")
-    localStorage.removeItem("refresh_token")
-    setUser(null)
-    navigate("/login")
+    setError(null)
+    return signUpMutation.mutateAsync(data)
   }
 
   return {

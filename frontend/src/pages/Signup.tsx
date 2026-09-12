@@ -49,7 +49,11 @@ export default function Signup() {
       <div className="w-full max-w-sm">
         {/* Brand */}
         <div className="text-center mb-8">
-          <img src="/favicon.svg" alt="DOit Logo" className="w-12 h-12 mx-auto mb-4" />
+          <img
+            src="/favicon.svg"
+            alt="DOit Logo"
+            className="w-12 h-12 mx-auto mb-4"
+          />
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Create your account
           </h1>

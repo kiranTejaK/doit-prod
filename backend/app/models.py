@@ -56,18 +56,34 @@ class User(Base):
 class RefreshToken(Base):
     __tablename__ = "refreshtoken"
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    token: Mapped[str] = mapped_column(String, unique=True, index=True)
-    # family_id groups tokens issued from the same login session.
-    # Reuse of a revoked token within a family signals theft — the entire family is revoked.
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("user.id", ondelete="CASCADE"), index=True
+    )
+    # SHA-256 hex digest of the raw refresh token.
+    # Raw tokens are never stored in plaintext.
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    # family_id groups tokens issued from the same login session / token rotation chain.
+    # Reuse of an already-used or revoked token in a family revokes the entire family.
     family_id: Mapped[str] = mapped_column(String, index=True)
-    expires_at: Mapped[datetime] = mapped_column(DateTime)
+    issued_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime, index=True)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, default=None)
     is_revoked: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Pointer to the child token that replaced this token upon rotation
+    replaced_by: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("refreshtoken.id", ondelete="SET NULL"), nullable=True, default=None
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("user.id", ondelete="CASCADE")
+    updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True, onupdate=lambda: datetime.now(timezone.utc).replace(tzinfo=None)
     )
+    # Legacy field maintained as nullable for seamless DB schema migrations
+    token: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
 
     user: Mapped["User"] = relationship(back_populates="refresh_tokens")
 
