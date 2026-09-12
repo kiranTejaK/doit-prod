@@ -3,6 +3,8 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlalchemy.exc import DBAPIError, OperationalError
+from sqlalchemy.orm.exc import StaleDataError
 
 from app import crud
 from app.api.deps import CurrentUser, SessionDep, get_current_active_superuser
@@ -105,9 +107,16 @@ def refresh_access_token(
             detail="Refresh token missing",
         )
 
-    access_token, new_refresh_token, expires_in = token_service.rotate_refresh_token(
-        session=session, raw_token=raw_token
-    )
+    try:
+        access_token, new_refresh_token, expires_in = token_service.rotate_refresh_token(
+            session=session, raw_token=raw_token
+        )
+    except (StaleDataError, OperationalError, DBAPIError):
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Concurrent refresh request collision. Token already rotated.",
+        )
 
     _set_refresh_cookie(response=response, refresh_token=new_refresh_token)
 

@@ -4,7 +4,9 @@ from datetime import datetime, timedelta, timezone
 import structlog
 from fastapi import HTTPException, status
 from sqlalchemy import or_, select, update
+from sqlalchemy.exc import DBAPIError, OperationalError
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.exc import StaleDataError
 
 from app.core import security
 from app.core.config import settings
@@ -174,13 +176,26 @@ def rotate_refresh_token(
         expires_at=new_expires_at,
         created_at=now,
     )
-    session.add(new_db_token)
-    session.flush()
+    try:
+        session.add(new_db_token)
+        session.flush()
 
-    # Link the old token to its replacement
-    db_token.replaced_by = new_db_token.id
-    session.add(db_token)
-    session.flush()
+        # Link the old token to its replacement
+        db_token.replaced_by = new_db_token.id
+        session.add(db_token)
+        session.flush()
+    except (StaleDataError, OperationalError, DBAPIError) as exc:
+        session.rollback()
+        logger.warning(
+            "concurrent_token_rotation_collision",
+            family_id=db_token.family_id,
+            user_id=str(user.id),
+            error=str(exc),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Concurrent refresh request collision. Token already rotated.",
+        )
 
     logger.info(
         "refresh_token_rotated",
