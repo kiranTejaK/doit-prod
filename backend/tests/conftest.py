@@ -37,10 +37,12 @@ def mock_redis_in_tests():
 @pytest.fixture(scope="session")
 def db_engine():
     from app.models import Base
+    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     with Session(engine) as session:
         init_db(session)
     yield engine
+    Base.metadata.drop_all(engine)
 
 
 @pytest.fixture(scope="function")

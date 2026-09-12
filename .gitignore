@@ -43,3 +43,10 @@ htmlcov/
 
 # Custom App specific
 emails.db
+*.db
+*.sqlite
+*.sqlite3
+test.db
+logs/
+*.log
+*.log.*

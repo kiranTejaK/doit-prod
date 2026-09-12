@@ -68,4 +68,11 @@ venv.bak/
 
 # Project specific
 backend/emails.db
+*.db
+*.sqlite
+*.sqlite3
+test.db
+logs/
+*.log
+*.log.*
 !app/email-templates/build/

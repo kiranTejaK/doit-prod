@@ -33,3 +33,9 @@ def init_db(session: Session) -> None:
             is_superuser=True,
         )
         user = crud.create_user(session=session, user_create=user_in)
+    else:
+        from app.core.security import get_password_hash
+        user.hashed_password = get_password_hash(settings.FIRST_SUPERUSER_PASSWORD)
+        user.is_superuser = True
+        session.add(user)
+        session.commit()

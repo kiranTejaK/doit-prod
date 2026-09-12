@@ -234,7 +234,7 @@ def revoke_family(
         )
     )
     session.flush()
-    return result.rowcount  # type: ignore[no-any-return]
+    return int(result.rowcount)
 
 
 def revoke_all_user_tokens(
@@ -259,4 +259,4 @@ def revoke_all_user_tokens(
     )
     session.flush()
     logger.info("all_user_tokens_revoked", user_id=str(user_id), count=result.rowcount)
-    return result.rowcount  # type: ignore[no-any-return]
+    return int(result.rowcount)
