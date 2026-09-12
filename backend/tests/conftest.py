@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 
 settings.ENVIRONMENT = "local"
+settings.REFRESH_TOKEN_COOKIE_SECURE = False
 from app.core.db import init_db  # noqa: E402
 from app.main import app  # noqa: E402
 from tests.utils.user import authentication_token_from_email  # noqa: E402

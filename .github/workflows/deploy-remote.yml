@@ -20,7 +20,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.12"
 
       - name: Install dependencies
         run: |
@@ -123,7 +123,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          source: "docker-compose.prod.yml,docker-compose.traefik.yml,docker/"
+          source: "docker-compose.prod.yml,docker-compose.traefik.yml"
           target: "~/doitapp-deploy"
 
       - name: Deploy via SSH
@@ -171,11 +171,20 @@ jobs:
               docker compose -f docker-compose.traefik.yml up -d
             fi
             
+            # Free up disk space before pulling new layers
+            echo "Freeing disk space before pulling new images..."
+            docker image prune -af --filter "until=24h" || true
+            docker builder prune -af --filter "until=24h" || true
+            
             echo "Pulling new images..."
             docker compose -f docker-compose.prod.yml pull
             
             echo "Deploying new version..."
             docker compose -f docker-compose.prod.yml up -d
+            
+            # Clean up old dangling layers after containers run
+            echo "Cleaning up dangling images and stopped containers..."
+            docker system prune -f --volumes=false || true
             
             echo "Waiting for containers to start..."
             sleep 15
